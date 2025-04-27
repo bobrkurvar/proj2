@@ -1,9 +1,9 @@
 from aiogram import Bot, Dispatcher
-from bot.core.config import load_config
+from core.config import load_config
 from bot.routers import game_random
-from bot.core import command_core
+from core import command_core
 
-conf = load_config('.env')
+conf = load_config(".env")
 token = conf.BOT_TOKEN
 print(token)
 
