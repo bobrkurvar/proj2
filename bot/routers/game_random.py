@@ -9,7 +9,7 @@ router = Router(name="game_random")
 my_number: int | None = None
 user = user.User()
 
-@router.message(F.text.in_({'Да', 'Игра', 'да', 'игра'}))
+@router.message(F.text.lower().in_({"угадай число"}))
 async def process_game(message: Message):
     if not user.game_is_active:
         global my_number; my_number = random.randint(0,100)

@@ -6,7 +6,7 @@ class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 class User(Base):
-    __tablename__ = "bot_users"
+    __tablename__ = 'bot_user'
     id: Mapped[int] = mapped_column(primary_key=True)
     first_name: Mapped[str] = mapped_column()
     last_name: Mapped[str] = mapped_column()
