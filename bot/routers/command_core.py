@@ -10,6 +10,6 @@ router = Router(name="command_start")
 
 @router.message(Command(commands=['start']))
 async def process_start_command(message: Message):
-        await message.answer(text = START_LEXICON["start_msg"],
-                             reply_markup=get_inline_keyboard_for_start())
-
+    await message.answer(text = START_LEXICON["start_msg"],
+                         reply_markup=get_inline_keyboard_for_start())
+    await message.delete()

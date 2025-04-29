@@ -3,13 +3,15 @@ from aiogram.types import BotCommand
 from aiogram.enums import ParseMode
 from aiogram.client.default import DefaultBotProperties
 from core.config import load_config
-from bot.routers import game_random, command_core, game_rps
+from bot.routers import command_core, game_rps
 import logging
 
 logger = logging.getLogger(__name__)
 
 async def set_main_menu(bot: Bot):
     main_menu_commands = [
+        BotCommand(command='/start',
+                   description='Начало работы бота'),
         BotCommand(command='/help',
                    description='Справка по работе бота'),
         BotCommand(command='/support',
@@ -45,6 +47,7 @@ async def main():
 
     dp.startup.register(set_main_menu)
     await dp.start_polling(bot)
+
 
 if __name__ == '__main__':
     import asyncio
