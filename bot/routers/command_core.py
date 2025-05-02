@@ -3,12 +3,15 @@ from aiogram.types import Message
 from aiogram.filters import Command
 from bot.keyboards.core_keyboards import get_inline_kb
 from bot.lexicon.core_lexicon import START_LEXICON, GAMES_BTN_LEXICON
+from db import *
 
 router = Router(name="command_start")
 
 @router.message(Command(commands=['start']))
 async def process_start_command(message: Message):
-    keyboard = get_inline_kb(**GAMES_BTN_LEXICON)
+    user = {"id": message.from_user.id, "first_name": message.from_user.first_name, "last_name": message.from_user.last_name}
+    await manager.create(User, **user)
+    keyboard = get_inline_kb(width=2,**GAMES_BTN_LEXICON)
     await message.answer(text = START_LEXICON["start_msg"],
                          reply_markup=keyboard)
     await message.delete()
