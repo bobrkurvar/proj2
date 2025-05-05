@@ -1,7 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from db.models import Base
 from sqlalchemy import select
-import asyncio
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 
@@ -9,6 +7,7 @@ class Crud:
     def __init__(self, url):
         self._engine = create_async_engine(url)
         self._session = async_sessionmaker(self._engine)
+
     async def create(self, model, **kwargs):
         try:
             async with self._session.begin() as session:
@@ -47,3 +46,6 @@ class Crud:
         await self._engine.dispose()
 
 
+if __name__ == "__main__":
+    from db.models import Base
+    import asyncio
