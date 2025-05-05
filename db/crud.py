@@ -1,3 +1,5 @@
+
+
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -13,9 +15,8 @@ class Crud:
             async with self._session.begin() as session:
                 tup = model(**kwargs)
                 session.add(tup)
-                print(kwargs)
-        except IntegrityError:
-                print(kwargs)
+        except IntegrityError as err:
+                print(err)
 
     async def delete(self, model, ident):
         try:
@@ -32,20 +33,26 @@ class Crud:
                 for atr, val in kwargs.items():
                     for_update.__setattr__(atr, val)
 
-    async def read(self, model, **kwargs):
+    async def read(self, model, indent: tuple, limit: int = None, offset: int = None):
         async with self._session.begin() as session:
-            tup = model(**kwargs)
-            query = select(model)
-            for atr, val in kwargs.items():
-                query = query.where(str(tup.__getattribute__(atr)) == str(val))
-                print(query)
-            results = (await session.execute(query)).scalars().all()
-            return [str(i) for i in results]
-
+            query = select(model).where(getattr(model, indent[0]) == indent[1])
+            if limit:
+                query = query.limit(limit)
+            if offset:
+                query = query.osffset(offset)
+            res = (await session.execute(query)).scalars()
+            return [r.to_dict() for r in res]
     async def close_and_dispose(self):
         await self._engine.dispose()
 
 
 if __name__ == "__main__":
-    from db.models import Base
     import asyncio
+    from db.models import User
+    from core import conf
+    async def main():
+        manager = Crud(str(conf.DATABASE_URL))
+        res = await manager.read(User, ('activity', True))
+        print(res)
+
+    asyncio.run(main())

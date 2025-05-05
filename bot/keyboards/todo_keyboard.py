@@ -1,22 +1,20 @@
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.types import InlineKeyboardButton
-from aiogram.filters.callback_data import CallbackData
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from bot.filters.callback_factory import CallbackFactoryTodo
 
-# async def get_todo_keyboard(*args, factory: CallbackData, **kwargs):
-#     kb_builder = InlineKeyboardBuilder()
-#     buttons: list[InlineKeyboardButton] = []
-#     if kwargs:
-#         for callback, message in kwargs.items():
-#             button = InlineKeyboardButton(text = message, callback_data=factory.pack())
-#             buttons.append(button)
-#
-#     kb_builder.row(*buttons, width=5)
-#     return kb_builder.as_markup()
-
-
-def get_todo_keyboard():
+def get_inline_kb_current_task(**kwargs) -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
-    button_right = InlineKeyboardButton(text='>>', callback_data="next")
-    button_left = InlineKeyboardButton(text='<<', callback_data="previous")
-    kb_builder.row(button_right, button_left, width=2)
+    buttons: list[InlineKeyboardButton] = []
+    for i in ('<<', 'EDIT', '>>'):
+        kwargs.setdefault('offset', 0)
+        if i == '<<':
+            kwargs['offset'] -= 1 if kwargs['offset'] > 0 else 0
+        elif i == '>>':
+            kwargs['offset'] += 1
+        button = InlineKeyboardButton(text=i, callback_data=CallbackFactoryTodo(act = i, **kwargs).pack())
+        buttons.append(button)
+    kb_builder.row(*buttons, width=3)
     return kb_builder.as_markup()
+
+
+

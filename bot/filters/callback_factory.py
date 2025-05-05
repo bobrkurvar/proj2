@@ -1,9 +1,11 @@
 from aiogram.filters.callback_data import CallbackData
 
 class CallbackFactoryTodo(CallbackData, prefix='todo'):
-    id: int
-    owner_user: int
-    todo_group: int
+    act: str
+    id: int = 0
+    doer_id: int
+    offset: int = 0
+    limit: int = 1
 
 
 

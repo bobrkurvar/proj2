@@ -5,7 +5,7 @@ from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from db.models import Base
-from db.crud import engine
+from db import manager
 
 from alembic import context
 
@@ -23,7 +23,7 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
-config.set_main_option("sqlalchemy.url", engine.url.render_as_string(hide_password=False))
+config.set_main_option("sqlalchemy.url", manager._engine.url.render_as_string(hide_password=False))
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

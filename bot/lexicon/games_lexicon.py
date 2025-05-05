@@ -1,5 +1,4 @@
-from typing import Any
-from bot.utils.game_sea_battle_util import get_field
+
 GAMES_BTN_LEXICON: dict[str, str] = {
     'rps': 'Камень ножницы бумага',
     'btn_2': 'Угадай число',
@@ -28,16 +27,3 @@ RPS_ANSWER_LEXICON_BTN = {
     'yes': 'yes - ✅✅✅',
     'no': 'no - ❌❌❌'
 }
-
-def get_sea_battle_field_lexicon(fld: list[list[int]], h: int = 8) -> dict[str, str]:
-    map_for_cell = {1: '🚢', 0: '', 2: '🌊', 3: '💥'}
-    keys = []
-    values = []
-    for i in range(h):
-        for j in range(h):
-            keys.append(f'{i}{j}')
-            values.append(map_for_cell[fld[i][j]])
-    res = dict(zip(keys, values))
-    print(res)
-    return res
-get_sea_battle_field_lexicon(get_field())
