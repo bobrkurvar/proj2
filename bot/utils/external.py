@@ -7,29 +7,33 @@ class MyExternalApiForBot:
         self._session = None
 
     async def begin(self, session: ClientSession):
+        print('-'*100)
         self._session = session
 
-    async def create(self, **data):
+    async def create(self, prefix: str, **data):
         try:
-            await self._session.post(self._url+'/create', json = data)
+            await self._session.post(self._url+ prefix + '/create', json = data)
         except ClientConnectorError:
             return None
 
-    async def remove(self, **args):
+    async def remove(self, prefix: str, **args):
         try:
-            await self._session.get(self._url + '/delete', params=args)
+            await self._session.get(self._url + prefix + '/delete', params=args)
         except ClientConnectorError:
             return None
 
-    async def read(self, **indent):
+    async def read(self, prefix: str, **indent):
         try:
-            res = await self._session.get(self._url + '/read', params=indent)
+            res = await self._session.get(self._url + prefix + '/read', params=indent)
             res = await res.json()
         except ClientConnectorError:
             return None
         return res
 
     async def close(self):
-        await self._session.close()
+        try:
+            await self._session.close()
+        except TypeError:
+            pass
 
 

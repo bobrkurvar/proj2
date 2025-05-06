@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from bot.keyboards.todo_keyboard import get_inline_kb
 from bot.lexicon import fill_todo_name, fill_todo_content, created_todo, edit_name, edit_content
 from bot.states.todo_states import FSMTodoFill, FSMTodoEdit
-from db import manager
+from bot.utils import external_api_manager
 from db.models import Todo
 
 router = Router()
@@ -42,7 +42,7 @@ async def process_create_task_content(message: Message, state: FSMContext):
     await message.bot.delete_message(chat_id=message.chat.id, message_id=bot_message_id)
     await state.update_data(content=message.text)
     del data['msg']
-    await manager.create(Todo, **data)
+    await external_api_manager.create(Todo, **data)
     await state.clear()
     buttons_text = ('list', 'create', 'remove')
     kb = get_inline_kb(*buttons_text, doer_id = message.from_user.id)

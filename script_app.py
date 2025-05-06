@@ -5,14 +5,16 @@ from fastapi.exceptions import RequestValidationError
 from app.exceptions.handlers import request_validation_exception_handler, global_exception_handler, custom_exception_handler
 from app.exceptions.custom_errors import CustomException
 from contextlib import asynccontextmanager
-from bot.utils import get_external_api_session_manager
+from bot.utils import init_external_api_session, close_external_api_manager
+from db import manager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-
-
-
+    await init_external_api_session()
+    yield
+    await close_external_api_manager()
+    await manager.close_and_dispose()
 
 app = FastAPI(lifespan = lifespan)
 
