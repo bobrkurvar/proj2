@@ -8,3 +8,18 @@ FILL_TODO_LEXICON: dict[str, str] = {
     "created": "\t\t\t <b>ЗАДАЧА СОЗДАНА</b>\n\n"
               "можете ознакомиться с ней в спике: /list"
 }
+
+TASK_LIST_VIEW = {
+    'new_task': '📕📕📕 <i><b>НАЗВАНИЕ ЗАДАНИЯ</b></i>:  <ins>{}</ins>📕📕📕\n\n<b><i>ЗАДАНИЕ</i></b>:\n{}\n\n',
+
+    'empty_list': '<b>\n\nСПИСОК ЗАДАНИЙ НА ДАННЫЙ МОМЕНТ ПУСТ\n\n</b>',
+
+}
+
+EDIT_TASK = {
+    'edit_task': '<b>ИЗМЕНИТЬ КРАЙНЮЮ ДАТУ - EDIT DATE\n\nИЗМЕНИТЬ ИМЯ ЗАДАЧИ - EDIT NAME\n\nИЗМЕНИТЬ ТЕЛО ЗАДАЧИ - EDIT CONTENT\n\n</b>',
+
+    'edit_name': '<b>ВВЕДИТЕ НОВОЕ ИМЯ ЗАДАНИЯ\n\n</b>',
+
+    'edit_content': '<b>ВВЕДИТЕ НОВОЕ ТЕЛО ЗАДАНИЯ\n\n</b>',
+}

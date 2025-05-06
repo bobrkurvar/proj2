@@ -1,13 +1,13 @@
 from .external import MyExternalApiForBot
 from aiohttp import ClientSession
 
-__all__ = ['get_session_manager']
+__all__ = ["get_external_api_session_manager", "MyExternalApiForBot"]
 
-session = None
-manager = None
+external_api_session = None
+external_api_manager = None
 
-async def get_session_manager():
-    global session, manager
-    session = ClientSession()
-    manager = MyExternalApiForBot(r'http://127.0.0.1:8000/user', session)
-    return manager
+async def get_external_api_session_manager(rout: str = '') -> MyExternalApiForBot:
+    global external_api_session, external_api_manager
+    external_api_session = ClientSession()
+    external_api_manager = MyExternalApiForBot(r'http://127.0.0.1:8000/'+rout, external_api_session)
+    return external_api_manager

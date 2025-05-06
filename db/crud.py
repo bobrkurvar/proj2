@@ -16,7 +16,7 @@ class Crud:
                 tup = model(**kwargs)
                 session.add(tup)
         except IntegrityError as err:
-                print(err)
+                pass
 
     async def delete(self, model, ident):
         try:
@@ -42,6 +42,7 @@ class Crud:
                 query = query.offset(offset)
             res = (await session.execute(query)).scalars()
             return [r.to_dict() for r in res]
+
     async def close_and_dispose(self):
         await self._engine.dispose()
 
