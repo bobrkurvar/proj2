@@ -39,7 +39,7 @@ class Crud:
             if limit:
                 query = query.limit(limit)
             if offset:
-                query = query.osffset(offset)
+                query = query.offset(offset)
             res = (await session.execute(query)).scalars()
             return [r.to_dict() for r in res]
     async def close_and_dispose(self):
