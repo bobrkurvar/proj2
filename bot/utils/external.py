@@ -2,8 +2,11 @@ from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientConnectorError
 
 class MyExternalApiForBot:
-    def __init__(self, url, session: ClientSession):
+    def __init__(self, url):
         self._url = url
+        self._session = None
+
+    async def begin(self, session: ClientSession):
         self._session = session
 
     async def create(self, **data):

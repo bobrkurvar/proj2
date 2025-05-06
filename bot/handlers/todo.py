@@ -2,7 +2,7 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.state import default_state
-from bot.keyboards.todo_keyboard import get_inline_kb_current_task, get_inline_kb_edit_task
+from bot.keyboards.todo_keyboard import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.utils import get_external_api_session_manager
 from bot.lexicon import list_todo_view, start, empty_todo_list, edit_task
@@ -32,8 +32,9 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         else:
             res_text = callback.message.text
 
-    params = {'doer_id': callback.from_user.id, 'id':todo_id, 'offset': offset}
-    kb = get_inline_kb_current_task(callback_data.act, **params)
+    params = {'doer_id': callback.from_user.id, 'id':todo_id, 'offset': offset,  'act': callback_data.act}
+    buttons_acts = ('<<', 'EDIT', '>>')
+    kb = get_inline_kb(width=3, *buttons_acts, **params)
     await callback.message.answer(text = res_text, reply_markup=kb)
     await callback.answer()
     await callback.message.delete()
@@ -54,8 +55,9 @@ async def process_user_todo_list_command(message: Message):
         else:
             res_text = message.text
 
-    params = {'doer_id': message.from_user.id, 'id': res[0]['id'], 'offset': 0}
-    kb = get_inline_kb_current_task('list', **params)
+    params = {'doer_id': message.from_user.id, 'id': res[0]['id'], 'offset': 0, 'act': 'list'}
+    buttons_acts = ('<<<', 'EDIT', '>>')
+    kb = get_inline_kb(width=3, *buttons_acts, **params)
     await message.answer(text = res_text, reply_markup=kb)
     await message.delete()
 
@@ -63,7 +65,8 @@ async def process_user_todo_list_command(message: Message):
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo):
     await callback.answer()
     params = {'doer_id': callback.from_user.id, 'id': callback_data.id, 'offset': callback_data.offset}
-    kb = get_inline_kb_edit_task(**params)
+    buttons_acts =  ('EDIT NAME', 'EDIT CONTENT', 'EDIT DATE')
+    kb = get_inline_kb(*buttons_acts, **params)
     await callback.message.answer(text=edit_task, reply_markup=kb)
     await callback.message.delete()
 

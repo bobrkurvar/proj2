@@ -5,7 +5,7 @@ from aiogram.filters import StateFilter
 from bot.filters.callback_factory import CallbackFactoryTodo
 from aiogram.fsm.state import default_state
 from aiogram.fsm.context import FSMContext
-from bot.keyboards.core_keyboards import get_inline_for_start_kb
+from bot.keyboards.todo_keyboard import get_inline_kb
 from bot.lexicon import fill_todo_name, fill_todo_content, created_todo, edit_name, edit_content
 from bot.states.todo_states import FSMTodoFill, FSMTodoEdit
 from db import manager
@@ -44,21 +44,22 @@ async def process_create_task_content(message: Message, state: FSMContext):
     del data['msg']
     await manager.create(Todo, **data)
     await state.clear()
-    kb = get_inline_for_start_kb(message.from_user.id)
+    buttons_text = ('list', 'create', 'remove')
+    kb = get_inline_kb(*buttons_text, doer_id = message.from_user.id)
     await message.answer(text=created_todo, reply_markup=kb)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.data == 'EDIT NAME'), StateFilter(default_state))
-async def process_init_edit_task_name(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
-    await callback.answer()
-    await callback.message.delete()
-    sent_message = await callback.message.answer(text=edit_name)
-    await state.update_data(msg=sent_message.message_id)
-    await state.set_state(FSMTodoEdit.edit_name)
+# @router.callback_query(CallbackFactoryTodo.filter(F.data == 'EDIT NAME'), StateFilter(default_state))
+# async def process_init_edit_task_name(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
+#     await callback.answer()
+#     await callback.message.delete()
+#     sent_message = await callback.message.answer(text=edit_name)
+#     await state.update_data(msg=sent_message.message_id)
+#     await state.set_state(FSMTodoEdit.edit_name)
 
-@router.message(StateFilter(FSMTodoEdit.edit_name))
-async def process_edit_task_name(message: Message, state: FSMContext):
-    await message.delete()
-    kb =
+# @router.message(StateFilter(FSMTodoEdit.edit_name))
+# async def process_edit_task_name(message: Message, state: FSMContext):
+#     await message.delete()
+#     kb =
 
 
 

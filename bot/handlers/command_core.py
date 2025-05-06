@@ -2,7 +2,7 @@ from aiogram import Router
 from aiogram.types import Message
 from aiogram.filters import Command, CommandStart
 from bot.lexicon import start, _help
-from bot.keyboards.core_keyboards import get_inline_for_start_kb
+from bot.keyboards.todo_keyboard import get_inline_kb
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
@@ -17,8 +17,8 @@ async def process_command_start(message: Message):
     user = {'id': message.from_user.id, 'first_name': message.from_user.first_name,
             'last_name': message.from_user.last_name}
     await manager.create(**user)
-    user_id = message.from_user.id
-    kb = get_inline_for_start_kb(user_id)
+    buttons = ('list', 'create', 'remove')
+    kb = get_inline_kb(*buttons, doer_id=message.from_user.id)
     await message.answer(text=start, reply_markup=kb)
     await message.delete()
 
