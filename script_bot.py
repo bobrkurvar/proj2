@@ -5,16 +5,25 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.enums import ParseMode
 from bot.handlers import core_handler, todo_handler, todo_with_state_handler
 import asyncio
-
+from bot.utils import get_ext_api_manager
 
 async def main():
-    bot = Bot(conf.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    storage = MemoryStorage()
-    dp = Dispatcher(storage=storage)
-    dp.include_router(core_handler)
-    dp.include_router(todo_handler)
-    dp.include_router(todo_with_state_handler)
-    await dp.start_polling(bot)
+    try:
+        bot = Bot(conf.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        storage = MemoryStorage()
+        dp = Dispatcher(storage=storage)
+        ext_api_manager = await get_ext_api_manager()
+        dp['ext_api_manager'] = ext_api_manager
+        dp.include_router(core_handler)
+        dp.include_router(todo_handler)
+        dp.include_router(todo_with_state_handler)
+        await dp.start_polling(bot)
+    finally:
+        try:
+            await ext_api_manager.close()
+            print(ext_api_manager._session)
+        except:
+            pass
 
 if __name__ == "__main__":
     asyncio.run(main())

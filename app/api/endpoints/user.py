@@ -11,7 +11,7 @@ async def register_by_start(user: UserInputFromBot):
     return dict(first_name=user.first_name, last_name=user.last_name)
 
 @router.get('/delete')
-async def remove_from_bot(user_id:int):
+async def delete_from_bot(user_id:int):
     await manager.delete(User, user_id)
     return {'msg': f"user from {user_id} has been removed"}
 

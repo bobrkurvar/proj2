@@ -1,5 +1,3 @@
-
-
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -13,10 +11,11 @@ class Crud:
     async def create(self, model, **kwargs):
         try:
             async with self._session.begin() as session:
+                print(kwargs)
                 tup = model(**kwargs)
                 session.add(tup)
-        except IntegrityError as err:
-                pass
+        except IntegrityError:
+            print('error '.upper() * 10)
 
     async def delete(self, model, ident):
         try:
@@ -24,11 +23,11 @@ class Crud:
                 for_remove = await session.get(model, ident)
                 await session.delete(for_remove)
         except UnmappedInstanceError:
-            print(ident)
+            return ident
 
-    async def update(self, model, identy, **kwargs):
+    async def update(self, model, ident, **kwargs):
         async with self._session.begin() as session:
-            for_update = await session.get(model, identy)
+            for_update = await session.get(model, ident)
             if for_update:
                 for atr, val in kwargs.items():
                     for_update.__setattr__(atr, val)

@@ -28,7 +28,7 @@ class User(Base):
 
 class Todo(Base):
     __tablename__ = 'todo'
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column()
     content: Mapped[str] = mapped_column()
     data_of_creation: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today())

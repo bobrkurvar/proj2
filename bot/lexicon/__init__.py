@@ -1,4 +1,3 @@
-
 from . import core_lexicon
 from . import lexicon
 
@@ -13,3 +12,4 @@ empty_todo_list = lexicon.TASK_LIST_VIEW['empty_list']
 edit_task = lexicon.EDIT_TASK['edit_task']
 edit_name = lexicon.EDIT_TASK['edit_name']
 edit_content = lexicon.EDIT_TASK['edit_content']
+delete_task = lexicon.FILL_TODO_LEXICON['delete']

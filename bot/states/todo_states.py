@@ -8,3 +8,6 @@ class FSMTodoEdit(StatesGroup):
     edit_content = State()
     edit_name = State()
     edit_date = State()
+
+class FSMTodoDelete(StatesGroup):
+    delete_task = State()

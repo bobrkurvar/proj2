@@ -1,13 +1,10 @@
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientConnectorError
 
-class MyExternalApiForBot:
-    def __init__(self, url):
-        self._url = url
-        self._session = None
 
-    async def begin(self, session: ClientSession):
-        print('-'*100)
+class MyExternalApiForBot:
+    def __init__(self, url, session: ClientSession):
+        self._url = url
         self._session = session
 
     async def create(self, prefix: str, **data):
@@ -31,9 +28,7 @@ class MyExternalApiForBot:
         return res
 
     async def close(self):
-        try:
+        if self._session is not None:
+            print(f'закрываю сессию {self.__class__.__name__}')
             await self._session.close()
-        except TypeError:
-            pass
-
-
+            self._session = None
