@@ -2,6 +2,7 @@
 .venv
 .idea
 alembic.ini
-*/__pycache__/
+**/__pycache__
 .idea/inspectionProfiles/Project_Default.xml
 .idea/inspectionProfiles/profiles_settings.xml
+migrations

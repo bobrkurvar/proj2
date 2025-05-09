@@ -1,4 +1,4 @@
-from core import conf
+from core import conf, logger
 from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -17,11 +17,12 @@ async def main():
         dp.include_router(core_handler)
         dp.include_router(todo_handler)
         dp.include_router(todo_with_state_handler)
+        logger.info('НАЧАЛО РАБОТЫ БОТА')
         await dp.start_polling(bot)
     finally:
         try:
             await ext_api_manager.close()
-            print(ext_api_manager._session)
+            logger.info('ЗАКРЫТИЕ СОЕДИНЕНИЯ ВНЕШНЕГО API')
         except:
             pass
 
