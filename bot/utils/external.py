@@ -1,5 +1,6 @@
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientConnectorError
+from core import logger
 
 
 class MyExternalApiForBot:
@@ -23,13 +24,18 @@ class MyExternalApiForBot:
         try:
             res = await self._session.get(self._url + prefix + '/read', params=indent)
             res = await res.json()
-            #print(res)
         except ClientConnectorError:
             return None
         return res
 
+    async def update(self, prefix: str, **kwargs):
+        try:
+            await self._session.patch(self._url + prefix + '/update', json=kwargs)
+        except ClientConnectorError:
+            pass
+
     async def close(self):
         if self._session is not None:
-            print(f'закрываю сессию {self.__class__.__name__}')
+            logger.debug(f'закрываю сессию {self.__class__.__name__}')
             await self._session.close()
             self._session = None

@@ -8,7 +8,7 @@ def custom_exception_handler(request: Request, exc):
     error = jsonable_encoder(CustomExceptionModel(status_code=exc.status_code,
                                                   er_message=exc.message,
                                                   er_details=exc.detail))
-    logger.exception(error.message)
+    logger.exception(error['er_message'])
     return JSONResponse(status_code=exc.status_code, content=error)
 
 

@@ -17,7 +17,7 @@ async def main():
         dp.include_router(core_handler)
         dp.include_router(todo_handler)
         dp.include_router(todo_with_state_handler)
-        logger.info('НАЧАЛО РАБОТЫ БОТА')
+        logger.debug('НАЧАЛО РАБОТЫ БОТА')
         await dp.start_polling(bot)
     finally:
         try:

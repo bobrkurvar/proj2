@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from app.exceptions import CustomException
@@ -29,10 +29,8 @@ class Crud:
 
     async def update(self, model, ident, **kwargs):
         async with self._session.begin() as session:
-            for_update = await session.get(model, ident)
-            if for_update:
-                for atr, val in kwargs.items():
-                    for_update.__setattr__(atr, val)
+            query = update(model).where(getattr(model, ident[0]) == ident[1]).values(**kwargs)
+            await session.execute(query)
 
     async def read(self, model, indent: tuple, limit: int = None, offset: int = None):
         async with self._session.begin() as session:
