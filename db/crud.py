@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
+from app.exceptions import CustomException
 
 class Crud:
     def __init__(self, url):
@@ -14,8 +15,9 @@ class Crud:
                 print(kwargs)
                 tup = model(**kwargs)
                 session.add(tup)
-        except IntegrityError:
-            print('error '.upper() * 10)
+        except IntegrityError as err:
+            raise CustomException(message=' '.join(err.detail),
+                                  detail=' '.join(err.detail))
 
     async def delete(self, model, ident):
         try:

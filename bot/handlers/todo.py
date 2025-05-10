@@ -25,7 +25,10 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
     offset:int = offsets[callback_data.act](callback_data.offset)
 
     if callback_data.act == 'list':
-        res: list[dict] = list(await ext_api_manager.read(prefix = 'todo', indent_attr = indent_attr, indent_val = indent_val))
+        try:
+            res: list[dict] = list(await ext_api_manager.read(prefix = 'todo', indent_attr = indent_attr, indent_val = indent_val))
+        except TypeError:
+            res = list()
     else:
         res = (await state.get_data()).get('list_id', [])
     try:
