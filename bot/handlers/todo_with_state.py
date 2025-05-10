@@ -1,4 +1,4 @@
-from aiogram import Router, F, Dispatcher
+from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import StateFilter
 
