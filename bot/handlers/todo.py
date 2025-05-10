@@ -1,4 +1,5 @@
 from aiogram import Router, F
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import Command, StateFilter
 from aiogram.fsm.state import default_state
@@ -7,13 +8,14 @@ from bot.utils import MyExternalApiForBot
 from bot.keyboards.todo_keyboard import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import list_todo_view, start, empty_todo_list, edit_task
-
+from bot.states.todo_states import FSMTodoEdit
 
 router = Router()
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})), StateFilter(default_state))
+@router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})),
+                       (StateFilter(default_state, FSMTodoEdit.edit)))
 async def process_user_todo_list_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
-                                        ext_api_manager: MyExternalApiForBot, list_id: list):
+                                        ext_api_manager: MyExternalApiForBot, list_id: list, state: FSMContext):
     indent_attr = "doer_id"
     indent_val = callback.from_user.id
     offsets = {'list': lambda x: x,
@@ -42,8 +44,9 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
     await callback.message.answer(text = res_text, reply_markup=kb)
     await callback.answer()
     await callback.message.delete()
+    await state.set_state(FSMTodoEdit.edit)
 
-@router.message(Command(commands=['list']), StateFilter(default_state))
+@router.message(Command(commands=['list']) , StateFilter(default_state, FSMTodoEdit.edit))
 async def process_user_todo_list_command(message: Message, ext_api_manager: MyExternalApiForBot):
     indent_attr = "doer_id"
     indent_val = message.from_user.id

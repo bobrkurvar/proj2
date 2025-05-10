@@ -5,6 +5,7 @@ class FSMTodoFill(StatesGroup):
     fill_name = State()
 
 class FSMTodoEdit(StatesGroup):
+    edit = State()
     edit_content = State()
     edit_name = State()
     edit_date = State()
