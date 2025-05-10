@@ -14,7 +14,6 @@ async def main():
         dp = Dispatcher(storage=storage)
         ext_api_manager = await get_ext_api_manager()
         dp['ext_api_manager'] = ext_api_manager
-        dp['list_id'] = []
         dp.include_router(core_handler)
         dp.include_router(todo_handler)
         dp.include_router(todo_with_state_handler)

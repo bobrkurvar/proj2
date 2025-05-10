@@ -16,7 +16,7 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
             'last_name': message.from_user.last_name}
     await ext_api_manager.create(prefix = 'user', **user)
     buttons = ('list', 'create', 'remove')
-    kb = get_inline_kb(*buttons, doer_id=message.from_user.id)
+    kb = get_inline_kb(*buttons, doer_id=message.from_user.id, limit=3)
     await message.answer(text=start, reply_markup=kb)
 
 @router.message(Command(commands=['cancel']), ~StateFilter(default_state))

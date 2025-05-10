@@ -23,6 +23,7 @@ class MyExternalApiForBot:
         try:
             res = await self._session.get(self._url + prefix + '/read', params=indent)
             res = await res.json()
+            #print(res)
         except ClientConnectorError:
             return None
         return res

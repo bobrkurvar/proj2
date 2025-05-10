@@ -1,4 +1,4 @@
-import logging
+from core import logger
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi import Request, status
@@ -9,7 +9,7 @@ def custom_exception_handler(request, exc):
     error = jsonable_encoder(CustomExceptionModel(status_code=exc.status_code,
                                                   er_message=exc.message,
                                                   er_details=exc.detail))
-    logging.exception(error.message)
+    logger.exception(error.message)
     return JSONResponse(status_code=exc.status_code, content=error)
 
 
@@ -20,7 +20,7 @@ def request_validation_exception_handler(request, exc):
     )
 
 def global_exception_handler(request, exc):
-    logging.exception("Internal server error")
+    logger.exception("Internal server error")
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"error": "Internal server error"}
