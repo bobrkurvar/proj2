@@ -42,7 +42,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
                 res_text += list_todo_view.format(res[i]['name'], res[i]['content']) + edit_task.format(res_cnt)
                 res_cnt += 1
             except IndexError:
-                offset -= limit
+                offset = callback_data.offset
     else:
         offset = callback_data.offset
         res_text = empty_todo_list

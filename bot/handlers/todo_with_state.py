@@ -12,20 +12,11 @@ from bot.utils import MyExternalApiForBot
 
 router = Router()
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'menu'), StateFilter(default_state, FSMTodoEdit.edit))
-async def process_press_button_menu(callback: CallbackQuery, state: FSMContext):
-    await callback.answer()
-    buttons = ('list', 'create')
-    kb = get_inline_kb(*buttons, limit=3)
-    await callback.message.answer(text=start, reply_markup=kb)
-    await callback.message.delete()
-    await state.clear()
-
 @router.callback_query(CallbackFactoryTodo.filter(F.act == 'create'), StateFilter(default_state))
 async def process_create_task(callback: CallbackQuery, state: FSMContext):
-    await callback.message.delete()
     await callback.answer()
     sent_message = await callback.message.answer(text=fill_todo_name)
+    await callback.message.delete()
     await state.update_data(msg = sent_message.message_id)
     await state.set_state(FSMTodoFill.fill_name)
 
@@ -54,7 +45,7 @@ async def process_create_task_content(message: Message, state: FSMContext, ext_a
     print(data)
     await ext_api_manager.create('todo', **data)
     await state.clear()
-    buttons_text = ('list', 'create', 'remove')
+    buttons_text = ('list', 'create')
     kb = get_inline_kb(*buttons_text, doer_id = message.from_user.id, limit=3)
     await message.answer(text=created_todo, reply_markup=kb)
 
@@ -63,28 +54,32 @@ async def process_pick_edit_task(message: Message, state: FSMContext, bot: Bot):
     current_task_num = int(message.text[-1])-1
     current_task = (await state.get_data()).get('task_list')[current_task_num]
     await state.update_data({'cur_task': current_task})
-    buttons = ('NAME', 'BODY', 'DEADLINE')
+    buttons = ('NAME', 'CONTENT', 'DEADLINE')
     kb = get_inline_kb(*buttons, width=3)
     del_msg = (await state.get_data()).get('del_msg')
     await bot.delete_message(message.chat.id, del_msg)
     await message.delete()
     await message.answer(text = process_edit, reply_markup=kb)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'body', 'deadline'})), StateFilter(FSMTodoEdit.edit))
+@router.message(StateFilter(FSMTodoEdit.edit))
+async def delete_misplaced_message(message: Message):
+    await message.delete()
+
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})), StateFilter(FSMTodoEdit.edit))
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,state: FSMContext):
     await callback.answer()
-    await callback.message.delete()
     data_of_edit = {
         'name': 'ИМЯ',
-        'body': 'СОДЕРЖАНИЕ',
+        'content': 'СОДЕРЖАНИЕ',
         'dedline': 'ВРЕМЯ ВЫПОЛНЕНИЯ',
     }
     edit_states = {
         'name': FSMTodoEdit.edit_name,
-        'body': FSMTodoEdit.edit_content,
+        'content': FSMTodoEdit.edit_content,
         'deadline': FSMTodoEdit.edit_date,
     }
     res_msg = await callback.message.answer(text=f'<b>ВВЕДИТЕ НОВОЕ {data_of_edit[callback_data.act.lower()]}</b>\n\n')
+    await callback.message.delete()
     await state.update_data({'del_msg': res_msg.message_id, 'updating_data': callback_data.act.lower()})
     await state.set_state(edit_states.get(callback_data.act.lower()))
 
