@@ -12,6 +12,15 @@ from bot.utils import MyExternalApiForBot
 
 router = Router()
 
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'menu'), StateFilter(default_state, FSMTodoEdit.edit))
+async def process_press_button_menu(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    buttons = ('list', 'create')
+    kb = get_inline_kb(*buttons, limit=3)
+    await callback.message.answer(text=start, reply_markup=kb)
+    await callback.message.delete()
+    await state.clear()
+
 @router.callback_query(CallbackFactoryTodo.filter(F.act == 'create'), StateFilter(default_state))
 async def process_create_task(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
@@ -46,7 +55,7 @@ async def process_create_task_content(message: Message, state: FSMContext, ext_a
     await ext_api_manager.create('todo', **data)
     await state.clear()
     buttons_text = ('list', 'create', 'remove')
-    kb = get_inline_kb(*buttons_text, doer_id = message.from_user.id)
+    kb = get_inline_kb(*buttons_text, doer_id = message.from_user.id, limit=3)
     await message.answer(text=created_todo, reply_markup=kb)
 
 @router.message(F.text.startswith('/edit_task'), StateFilter(FSMTodoEdit.edit))
