@@ -1,10 +1,9 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import PostgresDsn
 from pathlib import Path
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
-    DATABASE_URL: PostgresDsn
+    DATABASE_URL: str
     BOT_TOKEN: str
 
 def load_config(path: Path) -> Settings:

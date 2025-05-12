@@ -51,8 +51,9 @@ if __name__ == "__main__":
     from db.models import User
     from core import conf
     async def main():
-        manager = Crud(str(conf.DATABASE_URL))
-        res = await manager.read(User, ('activity', True))
-        print(res)
-
+        db_url = conf.DATABASE_URL
+        manager = Crud(db_url)
+        user = dict(id=9000000000, first_name='Egor', last_name="Bogdanov")
+        await manager.create(User, **user)
     asyncio.run(main())
+

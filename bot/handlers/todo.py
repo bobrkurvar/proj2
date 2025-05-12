@@ -9,6 +9,7 @@ from bot.keyboards.todo_keyboard import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import list_todo_view, start, empty_todo_list, edit_task
 from bot.states.todo_states import FSMTodoEdit
+from core import logger
 
 router = Router()
 
@@ -27,6 +28,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
     if callback_data.act == 'list':
         try:
             res: list[dict] = list(await ext_api_manager.read(prefix = 'todo', indent_attr = indent_attr, indent_val = indent_val))
+            logger.info(res)
         except TypeError:
             res = list()
     else:
