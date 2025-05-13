@@ -1,5 +1,5 @@
-from aiogram import Router
-from aiogram.types import Message
+from aiogram import Router, F
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, CommandStart
 from bot.lexicon import start, _help
 from bot.keyboards.todo_keyboard import get_inline_kb
@@ -7,6 +7,8 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from bot.utils import MyExternalApiForBot
+from bot.filters.callback_factory import CallbackFactoryTodo
+from bot.states.todo_states import FSMTodoEdit
 
 router = Router(name="command_start")
 
@@ -29,3 +31,12 @@ async def process_cancel_state_command(message: Message, state: FSMContext):
 async def process_delete_unknown(message: Message):
     await message.delete()
     await message.answer(text=_help)
+
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'menu'), StateFilter(default_state, FSMTodoEdit.edit))
+async def process_press_button_menu(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    buttons = ('list', 'create')
+    kb = get_inline_kb(*buttons, limit=3)
+    await callback.message.answer(text=start, reply_markup=kb)
+    await callback.message.delete()
+    await state.clear()
