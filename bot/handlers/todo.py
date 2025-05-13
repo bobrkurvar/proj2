@@ -34,15 +34,17 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         res = (await state.get_data()).get('task_list', [])
 
     if res:
-        await state.update_data({'task_list': res})
+        if len(res) <= offset:
+            offset = callback_data.offset
         res_text = ''
+        await state.update_data({'task_list': res})
         res_cnt = offset + 1
         for i in range(offset, offset+limit):
             try:
                 res_text += list_todo_view.format(res[i]['name'], res[i]['content']) + edit_task.format(res_cnt)
                 res_cnt += 1
             except IndexError:
-                offset = callback_data.offset
+                break
     else:
         offset = callback_data.offset
         res_text = empty_todo_list
@@ -50,8 +52,8 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
     params = {'doer_id': callback.from_user.id, 'offset': offset, 'limit': limit}
     buttons_acts = ('<<', '>>', 'MENU')
     kb = get_inline_kb(width=len(buttons_acts)-1, *buttons_acts, **params)
-    del_mst = await callback.message.answer(text = res_text, reply_markup=kb)
-    await state.update_data({'del_msg': del_mst.message_id})
+    del_msg= await callback.message.answer(text = res_text, reply_markup=kb)
+    await state.update_data({'del_msg': del_msg.message_id})
     await callback.answer()
     await callback.message.delete()
     await state.set_state(FSMTodoEdit.edit)

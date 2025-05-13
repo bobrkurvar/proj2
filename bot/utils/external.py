@@ -36,6 +36,6 @@ class MyExternalApiForBot:
 
     async def close(self):
         if self._session is not None:
-            logger.debug(f'закрываю сессию {self.__class__.__name__}')
+            logger.info(f'закрываю сессию {self.__class__.__name__}')
             await self._session.close()
             self._session = None
