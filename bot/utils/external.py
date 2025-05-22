@@ -39,3 +39,4 @@ class MyExternalApiForBot:
             logger.info(f'закрываю сессию {self.__class__.__name__}')
             await self._session.close()
             self._session = None
+

@@ -32,7 +32,7 @@ class Todo(Base):
     name: Mapped[str] = mapped_column()
     content: Mapped[str] = mapped_column()
     date_of_creation: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today())
-    deadline: Mapped[datetime.date | None] = mapped_column(Date, default=None)
+    deadline: Mapped[datetime.date | None ] = mapped_column(Date, default = None)
     doer_id: Mapped[int] = mapped_column(ForeignKey("bot_user.id"), index=True)
     user: Mapped[User] = relationship("User", back_populates="task")
 
