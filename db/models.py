@@ -31,8 +31,8 @@ class Todo(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column()
     content: Mapped[str] = mapped_column()
-    data_of_creation: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today())
-    data_of_change: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today())
+    date_of_creation: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today())
+    deadline: Mapped[datetime.date | None ] = mapped_column(Date, default = None)
     doer_id: Mapped[int] = mapped_column(ForeignKey("bot_user.id"), index=True)
     user: Mapped[User] = relationship("User", back_populates="task")
 
@@ -42,5 +42,5 @@ class Todo(Base):
 
     def to_dict(self):
         return {'id': self.id, "name": self.name, "content": self.content,
-                "data_of_creation": self.data_of_creation,
-                "data_of_change": self.data_of_change, "doer_id": self.doer_id}
+                "data_of_creation": self.date_of_creation,
+                "data_of_change": self.deadline, "doer_id": self.doer_id}
