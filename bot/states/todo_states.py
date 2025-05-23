@@ -3,6 +3,7 @@ from aiogram.fsm.state import StatesGroup, State
 class FSMTodoFill(StatesGroup):
     fill_content = State()
     fill_name = State()
+    fill_deadline = State()
 
 class FSMTodoEdit(StatesGroup):
     edit = State()

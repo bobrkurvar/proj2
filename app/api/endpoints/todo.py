@@ -2,6 +2,9 @@ from fastapi import APIRouter
 from db import manager
 from db.models import Todo
 from app.api.schemas.todo import TodoInput, TodoUpdate
+from datetime import date
+from typing import Any
+from core import logger
 
 router = APIRouter()
 
@@ -12,7 +15,10 @@ async def read_todo_list(indent_attr: str, indent_val: int):
 
 @router.post('/create')
 async def create_task(todo: TodoInput):
-    await manager.create(Todo, **todo.model_dump())
+    todo: dict[str, Any] = todo.model_dump()
+    todo.update(deadline=date(**todo['deadline']))
+    await manager.create(Todo, **todo)
+    logger.DEBUG(f"создан пользователь: {todo}")
 
 @router.patch('/update')
 async def update_task(todo: TodoUpdate):

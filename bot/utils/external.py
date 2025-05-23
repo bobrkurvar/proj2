@@ -10,7 +10,9 @@ class MyExternalApiForBot:
 
     async def create(self, prefix: str, **data):
         try:
+            #print(data)
             await self._session.post(self._url+ prefix + '/create', json = data)
+            print(data)
         except ClientConnectorError:
             return None
 

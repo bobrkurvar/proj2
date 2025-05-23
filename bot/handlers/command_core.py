@@ -1,9 +1,7 @@
 from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, CommandStart
-import asyncio
 from bot.lexicon import start, _help
-from bot.utils.send_later import send_later
 from bot.keyboards.todo_keyboard import get_inline_kb
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
@@ -16,7 +14,6 @@ router = Router(name="command_start")
 
 @router.message(CommandStart(), StateFilter(default_state))
 async def process_command_start(message: Message, ext_api_manager: MyExternalApiForBot):
-    #asyncio.create_task(send_later(message.bot, message.chat.id, 15))
     user = {'id': message.from_user.id, 'first_name': message.from_user.first_name,
             'last_name': message.from_user.last_name}
     await ext_api_manager.create(prefix = 'user', **user)
