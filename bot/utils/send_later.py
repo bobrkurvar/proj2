@@ -40,7 +40,5 @@ async def send_later(bot: Bot, chat_id: int, start: date | list, end: date | lis
     time = time_end - time_start
     await asyncio.sleep(time)
     await bot.send_message(chat_id=chat_id, text=text)
-
-
     await asyncio.sleep(time)
     await bot.send_message(chat_id=chat_id, text=text)
