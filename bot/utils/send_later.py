@@ -2,6 +2,8 @@ import asyncio
 from aiogram import Bot
 from datetime import date
 from bot.utils.keyboards import get_inline_kb
+from aiogram.fsm.context import FSMContext
+
 
 def leap_year(year: int):
     if year % 4 == 0:
@@ -39,7 +41,7 @@ async def send_later(bot: Bot, chat_id: int, start: date | list, end: date | dic
     time_year_end = time_year(end['year'])
     time_end = time_day_end + time_mnt_end + time_year_end
     time = time_end - time_start
-    await asyncio.sleep(time)
+    await asyncio.sleep(3)
     buttons = ('delete', 'complete', 'change deadline')
-    kb = get_inline_kb(*buttons, width=3)
+    kb = get_inline_kb(*buttons, width=3, id=todo_id)
     await bot.send_message(chat_id=chat_id, text=text, reply_markup=kb)

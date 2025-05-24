@@ -12,7 +12,7 @@ class Crud:
     async def create(self, model, **kwargs):
         try:
             async with self._session.begin() as session:
-                print(kwargs)
+                #print(kwargs)
                 tup = model(**kwargs)
                 session.add(tup)
                 return tup.id
@@ -26,16 +26,16 @@ class Crud:
                 for_remove = await session.get(model, ident)
                 await session.delete(for_remove)
         except UnmappedInstanceError:
-            return ident
+            pass
 
-    async def update(self, model, ident, **kwargs):
+    async def update(self, model, ident: str, ident_val: int, **kwargs):
         async with self._session.begin() as session:
-            query = update(model).where(getattr(model, ident[0]) == ident[1]).values(**kwargs)
+            query = update(model).where(getattr(model, ident) == ident_val).values(**kwargs)
             await session.execute(query)
 
-    async def read(self, model, indent: tuple, limit: int = None, offset: int = None):
+    async def read(self, model, ident: str, ident_val: int, limit: int = None, offset: int = None):
         async with self._session.begin() as session:
-            query = select(model).where(getattr(model, indent[0]) == indent[1])
+            query = select(model).where(getattr(model, ident) == ident_val)
             if limit:
                 query = query.limit(limit)
             if offset:

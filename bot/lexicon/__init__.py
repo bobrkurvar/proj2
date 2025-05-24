@@ -1,7 +1,6 @@
 from . import core_lexicon
 from . import lexicon
 
-
 start = core_lexicon.CORE_LEXICON["start"]
 _help = core_lexicon.CORE_LEXICON["help"]
 fill_todo_name = lexicon.FILL_TODO_LEXICON["fill_name"]

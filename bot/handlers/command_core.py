@@ -8,7 +8,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state
 from bot.utils import MyExternalApiForBot
 from bot.filters.callback_factory import CallbackFactoryTodo
-from bot.states.todo_states import FSMTodoEdit
+from bot.filters.states import FSMTodoEdit
 
 router = Router(name="command_start")
 
@@ -16,6 +16,7 @@ router = Router(name="command_start")
 async def process_command_start(message: Message, ext_api_manager: MyExternalApiForBot):
     user = {'id': message.from_user.id, 'first_name': message.from_user.first_name,
             'last_name': message.from_user.last_name}
+    print(user)
     await ext_api_manager.create(prefix = 'user', **user)
     buttons = ('list', 'create')
     kb = get_inline_kb(*buttons, doer_id=message.from_user.id, limit=3)

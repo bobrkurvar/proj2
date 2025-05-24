@@ -9,8 +9,8 @@ from core import logger
 router = APIRouter()
 
 @router.get('/read')
-async def read_todo_list(indent_attr: str, indent_val: int):
-    res = await manager.read(Todo, indent = (indent_attr, indent_val))
+async def read_todo_list(ident: str, ident_val: int):
+    res = await manager.read(Todo, ident=ident, ident_val=ident_val)
     return res
 
 @router.post('/create')
@@ -24,14 +24,17 @@ async def create_task(todo: TodoInput):
 @router.patch('/update')
 async def update_task(todo: TodoUpdate):
     todo_data = todo.model_dump()
-    todo_id = todo_data['ident']
-    del todo_data['ident']
     del todo_data['is_delete']
     if not todo_data['name']:
         del todo_data['name']
     if not todo_data['content']:
         del todo_data['content']
-    await manager.update(Todo, ident = todo_id, **todo_data)
+    if not todo_data['deadline']:
+        del todo_data['deadline']
+    else:
+        todo_data.update(deadline=date(day=todo_data['deadline']['day'], month=todo_data['deadline']['month'], year=todo_data['deadline']['year']))
+    print('-'*100, todo_data, '-'*100, sep='\n')
+    await manager.update(Todo, **todo_data)
 
 
 @router.delete('/delete')
