@@ -59,8 +59,8 @@ async def process_create_task_deadline_success(message: Message, state: FSMConte
     buttons_text = ('menu', )
     kb = get_inline_kb(*buttons_text, doer_id=message.from_user.id, limit=3)
     await ext_api_manager.create('todo', **data)
-    #time = deadline['day']
-    #send_later_task = asyncio.create_task(send_later(bot=message.bot, chat_id=message.chat.id, time=))
+    send_later_task = asyncio.create_task(send_later(bot=message.bot, chat_id=message.chat.id,
+                                                     start=date.today(), end=deadline, text='Время задания итстекло'))
     await message.answer(text=created_todo, reply_markup=kb)
     await message.delete()
     await message.bot.delete_message(chat_id=message.chat.id, message_id=bot_message_id)
