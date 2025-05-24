@@ -10,9 +10,8 @@ class MyExternalApiForBot:
 
     async def create(self, prefix: str, **data):
         try:
-            #print(data)
-            await self._session.post(self._url+ prefix + '/create', json = data)
-            print(data)
+            res = await self._session.post(self._url+ prefix + '/create', json = data)
+            return res
         except ClientConnectorError:
             return None
 
@@ -26,9 +25,9 @@ class MyExternalApiForBot:
         try:
             res = await self._session.get(self._url + prefix + '/read', params=indent)
             res = await res.json()
+            return res
         except ClientConnectorError:
             return None
-        return res
 
     async def update(self, prefix: str, **kwargs):
         try:

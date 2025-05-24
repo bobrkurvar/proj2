@@ -11,7 +11,7 @@ class User(Base):
     __tablename__ = 'bot_user'
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     first_name: Mapped[str] = mapped_column()
-    last_name: Mapped[str] = mapped_column()
+    last_name: Mapped[str | None] = mapped_column(default=None)
     activity: Mapped[bool] = mapped_column(default=True)
     task: Mapped[list["Todo"]] = relationship("Todo", back_populates="user")
 
