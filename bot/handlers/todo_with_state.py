@@ -5,7 +5,7 @@ import asyncio
 from bot.filters.callback_factory import CallbackFactoryTodo
 from aiogram.fsm.state import default_state
 from aiogram.fsm.context import FSMContext
-from bot.keyboards.todo_keyboard import get_inline_kb
+from bot.utils.keyboards import get_inline_kb
 from bot.lexicon import fill_todo_name, fill_todo_content, created_todo, process_edit, start, fill_todo_deadline, fail_fill_deadline
 from bot.states.todo_states import FSMTodoFill, FSMTodoEdit
 from bot.utils import MyExternalApiForBot
@@ -53,17 +53,16 @@ async def process_create_task_deadline_success(message: Message, state: FSMConte
     bot_message_id = data['msg']
     deadline = to_date_dict(message.text)
     del data['msg']
-    data.update(doer_id=message.from_user.id)
-    if deadline:
-        data.update(deadline=deadline)
+    data.update(doer_id=message.from_user.id, deadline=deadline)
     buttons_text = ('menu', )
     kb = get_inline_kb(*buttons_text, doer_id=message.from_user.id, limit=3)
-    await ext_api_manager.create('todo', **data)
+    todo_id = await ext_api_manager.create('todo', **data)
+    print(todo_id)
     send_later_task = asyncio.create_task(send_later(bot=message.bot, chat_id=message.chat.id,
-                                                     start=date.today(), end=deadline, text='Время задания итстекло'))
+                                                     start=date.today(), end=deadline, text='Время задания итстекло', todo_id=todo_id))
     await message.answer(text=created_todo, reply_markup=kb)
-    await message.delete()
     await message.bot.delete_message(chat_id=message.chat.id, message_id=bot_message_id)
+    await message.delete()
     await state.clear()
 
 @router.message(StateFilter(FSMTodoFill.fill_deadline))

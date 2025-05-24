@@ -2,7 +2,7 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, CommandStart
 from bot.lexicon import start, _help
-from bot.keyboards.todo_keyboard import get_inline_kb
+from bot.utils.keyboards import get_inline_kb
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import default_state

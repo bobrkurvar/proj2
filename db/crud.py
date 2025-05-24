@@ -15,6 +15,7 @@ class Crud:
                 print(kwargs)
                 tup = model(**kwargs)
                 session.add(tup)
+                return tup.id
         except IntegrityError as err:
             raise CustomException(message=' '.join(err.detail),
                                   detail=' '.join(err.detail))

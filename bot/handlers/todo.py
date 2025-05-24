@@ -5,29 +5,30 @@ from aiogram.filters import StateFilter
 from aiogram.fsm.state import default_state
 from bot.utils import MyExternalApiForBot
 
-from bot.keyboards.todo_keyboard import get_inline_kb
+from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import list_todo_view, empty_todo_list, edit_task
 from bot.states.todo_states import FSMTodoEdit
-#from core import logger
+from core import logger
 
 router = Router()
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})),
-                       (StateFilter(default_state, FSMTodoEdit.edit)))
+                       StateFilter(default_state, FSMTodoEdit.edit))
 async def process_user_todo_list_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                         ext_api_manager: MyExternalApiForBot, state: FSMContext):
-    indent_attr = "doer_id"
-    indent_val = callback.from_user.id
+    indent_attr, indent_val = "doer_id", callback.from_user.id
     limit = callback_data.limit
+
     offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
                '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
+
     offset: int = offsets[callback_data.act]
 
     if callback_data.act == 'list':
         try:
             res: list[dict] = list(await ext_api_manager.read(prefix = 'todo', indent_attr = indent_attr, indent_val = indent_val))
-            #logger.info(res)
+            logger.info(res)
         except TypeError:
             res = list()
     else:
@@ -58,9 +59,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         del_msg = await callback.message.answer(text=res_text, reply_markup=kb)
         await callback.message.delete()
         await state.update_data({'msg': del_msg.message_id})
-
-    if callback_data == 'list' and res:
-        await state.set_state(FSMTodoEdit.edit)
+    await state.set_state(FSMTodoEdit.edit)
 
 
 

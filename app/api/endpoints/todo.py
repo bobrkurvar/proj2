@@ -17,8 +17,9 @@ async def read_todo_list(indent_attr: str, indent_val: int):
 async def create_task(todo: TodoInput):
     todo: dict[str, Any] = todo.model_dump()
     todo.update(deadline=date(**todo['deadline']))
-    await manager.create(Todo, **todo)
-    logger.DEBUG(f"создан пользователь: {todo}")
+    todo_id = await manager.create(Todo, **todo)
+    logger.debug(f"задание добавлено: {todo}")
+    return todo_id
 
 @router.patch('/update')
 async def update_task(todo: TodoUpdate):

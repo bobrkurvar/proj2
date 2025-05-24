@@ -2,7 +2,7 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 from bot.filters.callback_factory import CallbackFactoryTodo
 
-def get_inline_kb(*button_texts, width:int = 1, **button_data):
+def get_inline_kb(*button_texts, width:int = 1, **button_data) -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
     buttons: list[InlineKeyboardButton] = []
     for i in button_texts:
