@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from datetime import date
 
 class TodoInput(BaseModel):
     name: str
@@ -14,3 +13,4 @@ class TodoUpdate(BaseModel):
     content: str | None = None
     deadline: dict[str, int] | None = None
     is_delete: bool = False
+

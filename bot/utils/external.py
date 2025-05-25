@@ -13,12 +13,14 @@ class MyExternalApiForBot:
             res = await self._session.post(self._url+ prefix + '/create', json = data)
             return res
         except ClientConnectorError:
-            return None
+            logger.error('ошибка подключения к внешнему api')
+            #return None
 
     async def remove(self, prefix: str, **args):
         try:
             await self._session.get(self._url + prefix + '/delete', params=args)
         except ClientConnectorError:
+            logger.error('ошибка подключения к внешнему api')
             return None
 
     async def read(self, prefix: str, **indent):
@@ -27,13 +29,14 @@ class MyExternalApiForBot:
             res = await res.json()
             return res
         except ClientConnectorError:
+            logger.error('ошибка подключения к внешнему api')
             return None
-
     async def update(self, prefix: str, **kwargs):
         try:
             await self._session.patch(self._url + prefix + '/update', json=kwargs)
         except ClientConnectorError:
-            pass
+            logger.error('ошибка подключения к внешнему api')
+            return None
 
     async def close(self):
         if self._session is not None:

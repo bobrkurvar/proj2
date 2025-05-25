@@ -43,4 +43,4 @@ class Todo(Base):
     def to_dict(self):
         return {'id': self.id, "name": self.name, "content": self.content,
                 "data_of_creation": self.date_of_creation,
-                "data_of_change": self.deadline, "doer_id": self.doer_id}
+                "deadline": self.deadline, "doer_id": self.doer_id}

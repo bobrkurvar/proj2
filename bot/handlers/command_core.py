@@ -1,4 +1,4 @@
-from aiogram import Router, F, Bot
+from aiogram import Router, F
 from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, CommandStart
 from bot.lexicon import start, _help
@@ -23,18 +23,18 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
     await message.answer(text=start, reply_markup=kb)
     await message.delete()
 
-@router.message(CommandStart(), ~StateFilter(default_state))
-async def process_command_start(message: Message, ext_api_manager: MyExternalApiForBot,
-                                bot: Bot, state: FSMContext):
-    user = {'id': message.from_user.id, 'first_name': message.from_user.first_name,
-            'last_name': message.from_user.last_name}
-    await ext_api_manager.create(prefix='user', **user)
-    buttons = ('list', 'create')
-    kb = get_inline_kb(*buttons, doer_id=message.from_user.id, limit=3)
-    await message.answer(text=start, reply_markup=kb)
-    del_msg = (await state.get_data()).get('del_msg')
-    await bot.delete_message(message.chat.id, del_msg)
-    await message.delete()
+# @router.message(CommandStart(), ~StateFilter(default_state))
+# async def process_command_start(message: Message, ext_api_manager: MyExternalApiForBot,
+#                                 bot: Bot, state: FSMContext):
+#     user = {'id': message.from_user.id, 'first_name': message.from_user.first_name,
+#             'last_name': message.from_user.last_name}
+#     await ext_api_manager.create(prefix='user', **user)
+#     buttons = ('list', 'create')
+#     kb = get_inline_kb(*buttons, doer_id=message.from_user.id, limit=3)
+#     await message.answer(text=start, reply_markup=kb)
+#     del_msg = (await state.get_data()).get('del_msg')
+#     await bot.delete_message(message.chat.id, del_msg)
+#     await message.delete()
 
 @router.message(Command(commands=['cancel']), ~StateFilter(default_state))
 async def process_cancel_state_command(message: Message, state: FSMContext):

@@ -12,21 +12,20 @@ class Crud:
     async def create(self, model, **kwargs):
         try:
             async with self._session.begin() as session:
-                #print(kwargs)
                 tup = model(**kwargs)
                 session.add(tup)
                 return tup.id
         except IntegrityError as err:
-            raise CustomException(message=' '.join(err.detail),
+            raise CustomException(message='пользователь уже создан',
                                   detail=' '.join(err.detail))
 
-    async def delete(self, model, ident):
+    async def delete(self, model, **ident):
         try:
             async with self._session.begin() as session:
                 for_remove = await session.get(model, ident)
                 await session.delete(for_remove)
         except UnmappedInstanceError:
-            pass
+            raise CustomException(message='такого объекта нет')
 
     async def update(self, model, ident: str, ident_val: int, **kwargs):
         async with self._session.begin() as session:
@@ -54,7 +53,5 @@ if __name__ == "__main__":
     async def main():
         db_url = conf.DATABASE_URL
         manager = Crud(db_url)
-        user = dict(id=9000000000, first_name='Egor', last_name="Bogdanov")
-        await manager.create(User, **user)
     asyncio.run(main())
 

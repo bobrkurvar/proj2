@@ -1,10 +1,7 @@
+from aiogram import Router
+from . import command_core, todo, todo_with_state
 
-from . import command_core
-from . import todo
-from . import todo_with_state
-
-__all__ = ["core_handler", "todo_handler", "todo_with_state_handler"]
-
-core_handler= command_core.router
-todo_handler = todo.router
-todo_with_state_handler = todo_with_state.router
+main_router = Router()
+main_router.include_router(command_core.router)
+main_router.include_router(todo.router)
+main_router.include_router(todo_with_state.router)
