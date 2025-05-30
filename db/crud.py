@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm.exc import UnmappedInstanceError
 from app.exceptions import CustomException
 
+
 class Crud:
     def __init__(self, url):
         self._engine = create_async_engine(url)
@@ -12,12 +13,11 @@ class Crud:
     async def create(self, model, **kwargs):
         try:
             async with self._session.begin() as session:
-                #print(kwargs)
                 tup = model(**kwargs)
                 session.add(tup)
                 return tup.id
         except IntegrityError as err:
-            raise CustomException(message=' '.join(err.detail),
+            raise CustomException(message='данный пользователь уже создан',
                                   detail=' '.join(err.detail))
 
     async def delete(self, model, ident):

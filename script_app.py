@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI
 from app.api.endpoints import main_router
 from app.exceptions.handlers import custom_exception_handler, global_exception_handler

@@ -3,7 +3,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.enums import ParseMode
-from bot.handlers import core_handler, todo_handler, todo_with_state_handler
+from bot.handlers import main_router
 import asyncio
 from bot.utils import get_ext_api_manager
 
@@ -14,9 +14,7 @@ async def main():
         dp = Dispatcher(storage=storage)
         ext_api_manager = await get_ext_api_manager()
         dp['ext_api_manager'] = ext_api_manager
-        dp.include_router(core_handler)
-        dp.include_router(todo_handler)
-        dp.include_router(todo_with_state_handler)
+        dp.include_router(main_router)
         logger.debug('НАЧАЛО РАБОТЫ БОТА')
         await dp.start_polling(bot)
     finally:
@@ -24,7 +22,7 @@ async def main():
             await ext_api_manager.close()
             logger.info('ЗАКРЫТИЕ СОЕДИНЕНИЯ ВНЕШНЕГО API')
         except:
-            pass
+            logger.info('ПОДКЛЮЧЕНИЕ НЕ БЫЛО ЗАКРЫТО')
 
 if __name__ == "__main__":
     asyncio.run(main())
