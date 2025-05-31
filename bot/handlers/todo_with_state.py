@@ -17,8 +17,7 @@ router = Router()
 async def process_create_task(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     kb = get_inline_kb('menu')
-    send_message = await callback.message.answer(text=phrases.fill_todo_name, reply_markup=kb)
-    await callback.message.delete()
+    send_message = await callback.message.edit_text(text=phrases.fill_todo_name, reply_markup=kb)
     await state.update_data(msg = send_message.message_id)
     await state.set_state(FSMTodoFill.fill_name)
 

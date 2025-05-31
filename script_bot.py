@@ -5,22 +5,23 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.enums import ParseMode
 from bot.handlers import main_router
 import asyncio
-from bot.utils import get_ext_api_manager
+from bot.utils import ext_api_manager
 
 async def main():
     try:
         bot = Bot(conf.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
         storage = MemoryStorage()
         dp = Dispatcher(storage=storage)
-        ext_api_manager = await get_ext_api_manager()
-        dp['ext_api_manager'] = await get_ext_api_manager()
+        await ext_api_manager.connect()
+        dp['ext_api_manager'] = ext_api_manager
         dp.include_router(main_router)
         logger.debug('НАЧАЛО РАБОТЫ БОТА')
         await dp.start_polling(bot)
     finally:
         try:
-            await ext_api_manager.close()
-            logger.info('ЗАКРЫТИЕ СОЕДИНЕНИЯ ВНЕШНЕГО API')
+            if ext_api_manager:
+                await ext_api_manager.close()
+            print(100*'-', 'ЗАКРЫТИЕ СОЕДИНЕНИЯ ВНЕШНЕГО API', 100*'-', sep='\n')
         except Exception:
             logger.info('ПОДКЛЮЧЕНИЕ НЕ БЫЛО ЗАКРЫТО')
 
