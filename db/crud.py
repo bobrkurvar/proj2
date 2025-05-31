@@ -42,7 +42,7 @@ class Crud:
             await session.execute(query)
 
     @handle_db_operation
-    async def read(self, model, ident: str, ident_val: int, limit: int = None, offset: int = None):
+    async def read(self, model, ident: str, ident_val: int, limit: int, offset: int | None = None):
         async with self._session.begin() as session:
             query = select(model).where(getattr(model, ident) == ident_val)
             if limit:

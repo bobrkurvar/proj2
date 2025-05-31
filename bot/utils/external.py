@@ -27,8 +27,8 @@ class MyExternalApiForBot:
         await self._session.get(self._url + prefix + '/delete', params=args)
 
     @handle_ext_api
-    async def read(self, prefix: str, **indent):
-        res = await self._session.get(self._url + prefix + '/read', params=indent)
+    async def read(self, prefix: str, **kwargs):
+        res = await self._session.get(self._url + prefix + '/read', params=kwargs)
         res = await res.json()
         return res
 

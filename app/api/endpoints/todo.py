@@ -9,8 +9,8 @@ from core import logger
 router = APIRouter()
 
 @router.get('/read')
-async def read_todo_list(ident: str, ident_val: int):
-    res = await manager.read(Todo, ident=ident, ident_val=ident_val)
+async def read_todo_list(ident: str, ident_val: int, limit: int, offset: int = 0):
+    res = await manager.read(Todo, ident=ident, ident_val=ident_val, limit=limit, offset=offset)
     return res
 
 @router.post('/create')
