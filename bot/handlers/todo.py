@@ -42,7 +42,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         res_cnt = offset + 1
         for i in range(offset, offset+limit):
             try:
-                res_text += phrases.list_todo_view.format(res[i].get('name'), res[i].get('content')) + phrases.edit_task.format(res_cnt)
+                res_text += phrases.list_todo_view.format(res[i].get('name'), res[i].get('content'), res[i].get('deadline')) + phrases.edit_task.format(res_cnt)
                 res_cnt += 1
             except IndexError:
                 break

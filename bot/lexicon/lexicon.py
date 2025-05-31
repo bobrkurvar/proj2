@@ -17,7 +17,7 @@ FILL_TODO_LEXICON: dict[str, str] = {
 }
 
 TASK_LIST_VIEW = {
-    'new_task': '📕📕📕 <i><b>НАЗВАНИЕ ЗАДАНИЯ</b></i>:  <ins>{}</ins>📕📕📕\n\n<b><i>ЗАДАНИЕ</i></b>:\n{}\n\n',
+    'new_task': '📕📕📕 <i><b>НАЗВАНИЕ ЗАДАНИЯ</b></i>:  <ins>{}</ins>📕📕📕\n\n<b><i>ЗАДАНИЕ</i></b>:\n{}\n\n<b><i>DEADLINE: {}</i></b>\n\n',
 
     'empty_list': '<b>\n\nСПИСОК ЗАДАНИЙ НА ДАННЫЙ МОМЕНТ ПУСТ\n\n</b>',
 

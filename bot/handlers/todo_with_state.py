@@ -27,9 +27,10 @@ async def process_create_task(callback: CallbackQuery, state: FSMContext):
 async def process_create_task_name(message: Message, state: FSMContext):
     data = await state.get_data()
     bot_message_id = data['msg']
+    kb = get_inline_kb('menu')
     await state.update_data(name=message.text)
     await message.delete()
-    await message.bot.edit_message_text(text=phrases.fill_todo_content ,chat_id = message.chat.id, message_id=bot_message_id)
+    await message.bot.edit_message_text(text=phrases.fill_todo_content ,chat_id = message.chat.id, message_id=bot_message_id, reply_markup=kb)
     await state.set_state(FSMTodoFill.fill_content)
 
 
@@ -37,9 +38,10 @@ async def process_create_task_name(message: Message, state: FSMContext):
 async def process_create_task_content(message: Message, state: FSMContext):
     data = await state.get_data()
     bot_message_id = data['msg']
+    kb = get_inline_kb('menu')
     await message.delete()
     await state.update_data(content=message.text)
-    await message.bot.edit_message_text(text=phrases.fill_todo_deadline, chat_id=message.chat.id, message_id=bot_message_id)
+    await message.bot.edit_message_text(text=phrases.fill_todo_deadline, chat_id=message.chat.id, message_id=bot_message_id, reply_markup=kb)
     await state.set_state(FSMTodoFill.fill_deadline)
 
 @router.message(IsDate(), StateFilter(FSMTodoFill.fill_deadline))

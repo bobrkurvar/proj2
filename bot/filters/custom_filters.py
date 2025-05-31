@@ -17,6 +17,9 @@ class IsDate(BaseFilter):
         except ValueError:
             return False
 
+        if year >= 3000:
+            return False
+
         if year < date.today().year or year == date.today().year and mnt < date.today().month or year == date.today().year and mnt == date.today().month and day <= date.today().day:
             return False
 

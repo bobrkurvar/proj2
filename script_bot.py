@@ -13,7 +13,7 @@ async def main():
         storage = MemoryStorage()
         dp = Dispatcher(storage=storage)
         ext_api_manager = await get_ext_api_manager()
-        dp['ext_api_manager'] = ext_api_manager
+        dp['ext_api_manager'] = await get_ext_api_manager()
         dp.include_router(main_router)
         logger.debug('НАЧАЛО РАБОТЫ БОТА')
         await dp.start_polling(bot)
@@ -21,7 +21,7 @@ async def main():
         try:
             await ext_api_manager.close()
             logger.info('ЗАКРЫТИЕ СОЕДИНЕНИЯ ВНЕШНЕГО API')
-        except:
+        except Exception:
             logger.info('ПОДКЛЮЧЕНИЕ НЕ БЫЛО ЗАКРЫТО')
 
 if __name__ == "__main__":
