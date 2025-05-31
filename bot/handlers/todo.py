@@ -7,7 +7,7 @@ from bot.utils import MyExternalApiForBot
 
 from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
-from bot.lexicon import list_todo_view, empty_todo_list, edit_task
+from bot.lexicon import phrases
 from bot.filters.states import FSMTodoEdit
 from core import logger
 
@@ -42,13 +42,13 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         res_cnt = offset + 1
         for i in range(offset, offset+limit):
             try:
-                res_text += list_todo_view.format(res[i].get('name'), res[i].get('content')) + edit_task.format(res_cnt)
+                res_text += phrases.list_todo_view.format(res[i].get('name'), res[i].get('content')) + phrases.edit_task.format(res_cnt)
                 res_cnt += 1
             except IndexError:
                 break
     else:
         offset = callback_data.offset
-        res_text = empty_todo_list
+        res_text = phrases.empty_todo_list
 
 
     if offset != callback_data.offset or callback_data.act == 'list':
@@ -56,11 +56,13 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         buttons_acts = ('<<', '>>', 'MENU')
         kb = get_inline_kb(width=len(buttons_acts) - 1, *buttons_acts, **params)
         msg = await callback.message.edit_text(text=res_text, reply_markup=kb)
+        #await callback.bot.edit_message_text(text=res_text, reply_markup=kb)
         await state.update_data(msg=msg.message_id)
     await state.set_state(FSMTodoEdit.edit)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'delete', 'change deadline', 'complete'})))
 async def process_task_time_has_expired(callback: CallbackQuery, callback_data: CallbackFactoryTodo, ext_api_manager: MyExternalApiForBot):
+    await callback.answer()
     if callback_data.act.lower() == 'delete':
         await ext_api_manager.remove('todo', id=callback_data.id)
     elif callback_data.act.lower() == 'change_deadline':

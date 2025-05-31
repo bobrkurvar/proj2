@@ -22,7 +22,7 @@ async def main():
             await ext_api_manager.close()
             logger.info('ЗАКРЫТИЕ СОЕДИНЕНИЯ ВНЕШНЕГО API')
         except:
-            pass
+            logger.info('ПОДКЛЮЧЕНИЕ НЕ БЫЛО ЗАКРЫТО')
 
 if __name__ == "__main__":
     asyncio.run(main())
