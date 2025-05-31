@@ -1,39 +1,41 @@
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientConnectorError
 from core import logger
+from functools import wraps
 
+def handle_ext_api(func):
+    @wraps(func)
+    async def wrapper(self, *args, **kwargs):
+        try:
+            return await func(self, *args, **kwargs)
+        except ClientConnectorError:
+            logger.error('поключение не установлено')
+    return wrapper
 
 class MyExternalApiForBot:
     def __init__(self, url, session: ClientSession):
         self._url = url
         self._session = session
 
+    @handle_ext_api
     async def create(self, prefix: str, **data):
-        try:
-            res = await self._session.post(self._url+ prefix + '/create', json = data)
-            return res
-        except ClientConnectorError:
-            return None
+        res = await self._session.post(self._url+ prefix + '/create', json = data)
+        return res
 
+    @handle_ext_api
     async def remove(self, prefix: str, **args):
-        try:
-            await self._session.get(self._url + prefix + '/delete', params=args)
-        except ClientConnectorError:
-            return None
+        await self._session.get(self._url + prefix + '/delete', params=args)
 
+    @handle_ext_api
     async def read(self, prefix: str, **indent):
-        try:
-            res = await self._session.get(self._url + prefix + '/read', params=indent)
-            res = await res.json()
-            return res
-        except ClientConnectorError:
-            return None
+        res = await self._session.get(self._url + prefix + '/read', params=indent)
+        res = await res.json()
+        return res
 
+    @handle_ext_api
     async def update(self, prefix: str, **kwargs):
-        try:
-            await self._session.patch(self._url + prefix + '/update', json=kwargs)
-        except ClientConnectorError:
-            pass
+        await self._session.patch(self._url + prefix + '/update', json=kwargs)
+
 
     async def close(self):
         if self._session is not None:

@@ -1,1 +1,1 @@
-from .custom_errors import CustomException
+from .custom_errors import CustomDbException
