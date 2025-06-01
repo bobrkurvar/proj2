@@ -23,45 +23,60 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
                '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
 
     offset: int = offsets[callback_data.act]
-    emtpy_lst = (await state.get_data()).get('task_list', None)
+    emtpy_lst = (await state.get_data()).get('task_list')
+
+    query_flag = False
+
     if emtpy_lst is None:
-        emtpy_lst = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
+        try:
+            emtpy_lst = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset))
+        except TypeError:
+            emtpy_lst = None
         await state.update_data(task_list=emtpy_lst)
+        query_flag = True
 
     send_message = True
     lst_todo_first_id = 0
-    if(emtpy_lst):
+    if emtpy_lst:
         if callback_data.act == 'list':
             try:
                 next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset+limit))
             except TypeError:
                 next_page = None
-            await state.update_data({'next_page': next_page})
+            await state.update_data({'next_page': next_page, 'prev_page': None})
 
         elif callback_data.act == '>>':
             full_data = await state.get_data()
-            cur_page = full_data.get('next_page')
+            cur_page = full_data.get('task_list') if query_flag else full_data.get('next_page')
             if(cur_page):
-                prev_page=full_data.get('task_list')
                 try:
-                    next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset + limit))
+                    next_page = list(
+                        await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id,
+                                                   limit=limit, offset=offset + limit))
                 except TypeError:
                     next_page = None
+
+                prev_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset - limit)) if offset >= limit else None if query_flag else full_data.get('task_list')
                 await state.update_data({"prev_page": prev_page, "task_list": cur_page, "next_page": next_page})
             else:
                 send_message = False
 
         elif callback_data.act == '<<':
             full_data = await state.get_data()
-            cur_page = full_data.get('prev_page')
+            cur_page = full_data.get('task_list') if query_flag else full_data.get('prev_page')
             if(cur_page):
-                prev_page = None
-                if offset >= limit:
-                    prev_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset - limit))
-                next_page = full_data.get('task_list')
+                prev_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id,limit=limit, offset=offset - limit)) if offset >= limit else None
+                if query_flag:
+                    try:
+                        next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset + limit))
+                    except TypeError:
+                        next_page = None
+                else:
+                    next_page = full_data.get('task_list')
                 await state.update_data({'prev_page': prev_page, "task_list": cur_page, "next_page": next_page})
             else:
                 send_message = False
+
         lst_todo =(await state.get_data()).get('task_list')
         res_text = ''
         lst_todo_first_id = lst_todo[0].get('id')

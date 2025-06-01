@@ -19,11 +19,13 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
     await ext_api_manager.create(prefix = 'user', **user)
     buttons = ('list', 'create')
     limit = 3
-    try:
-        lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=message.from_user.id, limit=limit))
-    except TypeError:
-        lst_todo = list()
-    await state.update_data({'task_list':lst_todo})
+    lst_todo = (await state.get_data()).get('task_list')
+    if not lst_todo:
+        try:
+            lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=message.from_user.id, limit=limit))
+        except TypeError:
+            lst_todo = list()
+        await state.update_data(task_list=lst_todo)
     kb = get_inline_kb(*buttons, doer_id=message.from_user.id, limit=limit)
     await message.delete()
     msg = (await state.get_data()).get('msg', None)
@@ -41,12 +43,15 @@ async def process_delete_unknown(message: Message, state: FSMContext):
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'menu'), StateFilter(default_state, FSMTodoEdit, FSMTodoFill))
 async def process_press_button_menu(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext, ext_api_manager: MyExternalApiForBot):
     await callback.answer()
+    lst_todo = (await state.get_data()).get('task_list')
     await state.clear()
     limit = callback_data.limit
-    try:
-        lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
-    except TypeError:
-        lst_todo = None
+    if not lst_todo:
+        try:
+            lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
+        except TypeError:
+            lst_todo = list()
+    await state.update_data(task_list=lst_todo)
     await state.set_data({'task_list':lst_todo})
     buttons = ('list', 'create')
     kb = get_inline_kb(*buttons, limit=limit, doer_id=callback.from_user.id)

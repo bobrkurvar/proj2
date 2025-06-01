@@ -1,7 +1,8 @@
 from core import conf, logger
 from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher
-from aiogram.fsm.storage.memory import MemoryStorage
+from aiogram.fsm.storage.redis import RedisStorage
+from redis.asyncio import Redis
 from aiogram.enums import ParseMode
 from bot.handlers import main_router
 import asyncio
@@ -10,7 +11,8 @@ from bot.utils import ext_api_manager
 async def main():
     try:
         bot = Bot(conf.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-        storage = MemoryStorage()
+        redis = Redis(host='localhost')
+        storage = RedisStorage(redis=redis, state_ttl=100)
         dp = Dispatcher(storage=storage)
         await ext_api_manager.connect()
         dp['ext_api_manager'] = ext_api_manager
