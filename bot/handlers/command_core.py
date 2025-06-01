@@ -34,7 +34,7 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
     else:
         await message.answer(text=phrases.start, reply_markup=kb)
 
-@router.message(Command(commands=['help']),StateFilter(default_state))
+@router.message(Command(commands=['help']), StateFilter(default_state))
 async def process_delete_unknown(message: Message, state: FSMContext):
     await message.delete()
     button = 'START'
@@ -60,7 +60,8 @@ async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_a
     kb = get_inline_kb(*buttons, doer_id=callback.from_user.id, limit=limit)
     await callback.message.edit_text(text=phrases.start, reply_markup=kb)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='menu'), StateFilter(default_state, FSMTodoEdit, FSMTodoFill))
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='menu'),
+                       StateFilter(default_state, FSMTodoEdit, FSMTodoFill))
 async def process_press_button_menu(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext, ext_api_manager: MyExternalApiForBot):
     await callback.answer()
     data = await state.get_data()
@@ -77,3 +78,7 @@ async def process_press_button_menu(callback: CallbackQuery, callback_data: Call
     buttons = ('list', 'create')
     kb = get_inline_kb(*buttons, limit=limit, doer_id=callback.from_user.id)
     await callback.message.edit_text(text=phrases.start, reply_markup=kb)
+
+@router.message()
+async def process_spam(message: Message):
+    await message.delete()

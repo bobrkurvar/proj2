@@ -14,6 +14,7 @@ class FSMTodoEdit(StatesGroup):
     edit_date = State()
     delete_task = State()
 
+
 class CustomRedisStorage(RedisStorage):
     async def set_data(self, key: StorageKey, data: dict) -> None:
         await super().set_data(key, data)

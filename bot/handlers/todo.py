@@ -13,7 +13,7 @@ from bot.filters.states import FSMTodoEdit
 router = Router()
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})),
-                       StateFilter(default_state, FSMTodoEdit.edit))
+                       StateFilter(default_state))
 async def process_user_todo_list_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                         ext_api_manager: MyExternalApiForBot, state: FSMContext):
     await callback.answer()

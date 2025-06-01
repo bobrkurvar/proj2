@@ -75,7 +75,7 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
         'deadline': FSMTodoEdit.edit_date,
     }
     msg = await callback.message.edit_text(text=f'<b>ВВЕДИТЕ НОВОЕ {data_of_edit[callback_data.act.lower()]}</b>\n\n')
-    await state.update_data(msg=msg, updating_data=callback_data.act.lower())
+    await state.update_data(msg=msg.message_id, updating_data=callback_data.act.lower())
     await state.set_state(edit_states.get(callback_data.act.lower()))
 
 
@@ -84,17 +84,16 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
 async def process_edit_todo(message: Message, state: FSMContext, ext_api_manager: MyExternalApiForBot):
     data_from_fsm = await state.get_data()
     current_task = data_from_fsm.get('cur_task')
-    print(100*'-', current_task, 100*'-', sep='\n')
     task_id = current_task.get('id')
     updating_data_name = data_from_fsm.get('updating_data')
     updating_data_content = to_date_dict(message.text) if updating_data_name == 'deadline' else message.text
     updating_data = {updating_data_name: updating_data_content, 'ident_val': task_id}
     await ext_api_manager.update('todo', **updating_data)
     params = dict(limit=3, offset=0)
-    buttons = ('menu', )
-    kb = get_inline_kb(*buttons, **params)
+    buttons = 'menu'
+    kb = get_inline_kb(buttons, **params)
     msg = (await state.get_data()).get('msg')
-    await msg.edit_text(text=phrases.start, reply_markup=kb)
+    await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.start, reply_markup=kb)
     (await state.get_data()).pop('msg')
     await message.delete()
     await state.clear()
