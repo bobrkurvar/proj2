@@ -69,16 +69,15 @@ async def process_create_task_deadline_fail(message: Message, state: FSMContext)
     await message.delete()
 
 
-@router.message(F.text.startswith('/edit_task'), StateFilter(FSMTodoEdit.edit))
+@router.message(StateFilter(FSMTodoEdit.edit))
 async def process_pick_edit_task(message: Message, state: FSMContext):
-    current_task_num = int(message.text[-1])-1
+    current_task_num = (await state.get_data()).get('num')
     current_task = (await state.get_data()).get('task_list')[current_task_num]
     (await state.get_data()).pop('task_list')
     await state.update_data({'cur_task': current_task})
     buttons = ('NAME', 'CONTENT', 'DEADLINE')
     kb = get_inline_kb(*buttons, width=3)
     msg_id = (await state.get_data()).get('msg')
-    #await message.answer(text=process_edit, reply_markup=kb)
     await message.bot.edit_message_text(text=phrases.process_edit, reply_markup=kb, chat_id=message.chat.id, message_id=msg_id)
     await message.delete()
 
