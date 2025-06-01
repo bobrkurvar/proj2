@@ -18,7 +18,7 @@ async def process_create_task(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     kb = get_inline_kb('menu')
     send_message = await callback.message.edit_text(text=phrases.fill_todo_name, reply_markup=kb)
-    await state.update_data(msg = send_message)
+    await state.update_data(msg = send_message.message_id)
     await state.set_state(FSMTodoFill.fill_name)
 
 
@@ -28,7 +28,7 @@ async def process_create_task_name(message: Message, state: FSMContext):
     kb = get_inline_kb('menu')
     await state.update_data(name=message.text)
     await message.delete()
-    await msg.edit_text(text=phrases.fill_todo_content, reply_markup=kb)
+    await message.bot.edit_message_text(chat_id = message.chat.id, message_id=msg, text=phrases.fill_todo_content, reply_markup=kb)
     await state.set_state(FSMTodoFill.fill_content)
 
 
@@ -38,7 +38,7 @@ async def process_create_task_content(message: Message, state: FSMContext):
     kb = get_inline_kb('menu')
     await message.delete()
     await state.update_data(content=message.text)
-    await msg.edit_text(text=phrases.fill_todo_deadline, reply_markup=kb)
+    await message.bot.edit_message_text(chat_id = message.chat.id, message_id=msg, text=phrases.fill_todo_deadline, reply_markup=kb)
     await state.set_state(FSMTodoFill.fill_deadline)
 
 @router.message(IsDate(), StateFilter(FSMTodoFill.fill_deadline))
@@ -51,16 +51,14 @@ async def process_create_task_deadline_success(message: Message, state: FSMConte
     buttons_text = 'menu'
     kb = get_inline_kb(buttons_text, doer_id=message.from_user.id, limit=3)
     await ext_api_manager.create('todo', **data)
-    await msg.edit_text(text=phrases.created_todo, reply_markup=kb)
+    await message.bot.edit_message_text(chat_id = message.chat.id, message_id=msg, text=phrases.created_todo, reply_markup=kb)
     await message.delete()
     await state.clear()
 
 @router.message(StateFilter(FSMTodoFill.fill_deadline))
 async def process_create_task_deadline_fail(message: Message, state: FSMContext):
-    bot_message_id = (await state.get_data())['msg']
-    send_message = await message.answer(text=phrases.fail_fill_deadline)
-    await state.update_data(msg=send_message.message_id)
-    await message.bot.delete_message(chat_id = message.chat.id, message_id = bot_message_id)
+    msg = (await state.get_data()).get('msg')
+    await message.bot.edit_message_text(chat_id=message.chat.it, message_id=msg, text=phrases.fail_fill_deadline)
     await message.delete()
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})), StateFilter(FSMTodoEdit.edit))

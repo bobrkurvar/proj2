@@ -20,7 +20,7 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
     buttons = ('list', 'create')
     limit = 3
     lst_todo = (await state.get_data()).get('task_list')
-    if not lst_todo:
+    if lst_todo is None:
         try:
             lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=message.from_user.id, limit=limit))
         except TypeError:
@@ -28,7 +28,7 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
         await state.update_data(task_list=lst_todo)
     kb = get_inline_kb(*buttons, doer_id=message.from_user.id, limit=limit)
     await message.delete()
-    msg = (await state.get_data()).get('msg', None)
+    msg = (await state.get_data()).get('msg')
     if msg:
         await msg.edit_text(text=phrases.start, reply_markup=kb)
     else:
@@ -37,13 +37,34 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
 @router.message(Command(commands=['help']),StateFilter(default_state))
 async def process_delete_unknown(message: Message, state: FSMContext):
     await message.delete()
-    msg = await message.answer(text=phrases.help)
-    await state.update_data(msg=msg)
+    button = 'START'
+    kb = get_inline_kb(button)
+    await message.answer(text=phrases.help, reply_markup=kb)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'menu'), StateFilter(default_state, FSMTodoEdit, FSMTodoFill))
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='start'))
+async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_api_manager: MyExternalApiForBot):
+    await callback.answer()
+    user = {'id': callback.from_user.id, 'first_name': callback.from_user.first_name,
+            'last_name': callback.from_user.last_name}
+    await ext_api_manager.create(prefix='user', **user)
+    buttons = ('list', 'create')
+    limit = 3
+    lst_todo = (await state.get_data()).get('task_list')
+    if lst_todo is None:
+        try:
+            lst_todo = list(
+                await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
+        except TypeError:
+            lst_todo = list()
+        await state.update_data(task_list=lst_todo)
+    kb = get_inline_kb(*buttons, doer_id=callback.from_user.id, limit=limit)
+    await callback.message.edit_text(text=phrases.start, reply_markup=kb)
+
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='menu'), StateFilter(default_state, FSMTodoEdit, FSMTodoFill))
 async def process_press_button_menu(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext, ext_api_manager: MyExternalApiForBot):
     await callback.answer()
-    lst_todo = (await state.get_data()).get('task_list')
+    data = await state.get_data()
+    lst_todo = data.get('task_list')
     await state.clear()
     limit = callback_data.limit
     if not lst_todo:
@@ -51,8 +72,8 @@ async def process_press_button_menu(callback: CallbackQuery, callback_data: Call
             lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
         except TypeError:
             lst_todo = list()
-    await state.update_data(task_list=lst_todo)
-    await state.set_data({'task_list':lst_todo})
+        data.update(task_list=lst_todo)
+    await state.update_data(data)
     buttons = ('list', 'create')
     kb = get_inline_kb(*buttons, limit=limit, doer_id=callback.from_user.id)
     await callback.message.edit_text(text=phrases.start, reply_markup=kb)

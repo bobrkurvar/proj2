@@ -31,7 +31,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         try:
             emtpy_lst = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset))
         except TypeError:
-            emtpy_lst = None
+            emtpy_lst = list()
         await state.update_data(task_list=emtpy_lst)
         query_flag = True
 
@@ -50,9 +50,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
             cur_page = full_data.get('task_list') if query_flag else full_data.get('next_page')
             if(cur_page):
                 try:
-                    next_page = list(
-                        await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id,
-                                                   limit=limit, offset=offset + limit))
+                    next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset + limit))
                 except TypeError:
                     next_page = None
 
@@ -64,13 +62,10 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         elif callback_data.act == '<<':
             full_data = await state.get_data()
             cur_page = full_data.get('task_list') if query_flag else full_data.get('prev_page')
-            if(cur_page):
+            if cur_page:
                 prev_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id,limit=limit, offset=offset - limit)) if offset >= limit else None
                 if query_flag:
-                    try:
-                        next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset + limit))
-                    except TypeError:
-                        next_page = None
+                    next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset + limit))
                 else:
                     next_page = full_data.get('task_list')
                 await state.update_data({'prev_page': prev_page, "task_list": cur_page, "next_page": next_page})
