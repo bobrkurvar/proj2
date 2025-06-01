@@ -9,7 +9,6 @@ from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import phrases
 from bot.filters.states import FSMTodoEdit
-from core import logger
 
 router = Router()
 
@@ -24,7 +23,10 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
                '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
 
     offset: int = offsets[callback_data.act]
-    emtpy_lst = (await state.get_data()).get('task_list')
+    emtpy_lst = (await state.get_data()).get('task_list', None)
+    if emtpy_lst is None:
+        emtpy_lst = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
+        await state.update_data(task_list=emtpy_lst)
 
     send_message = True
     lst_todo_first_id = 0
@@ -72,8 +74,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         buttons_acts = ('<<', 'DELETE', 'EDIT', '>>', 'MENU')
         params = {'doer_id': callback.from_user.id, 'offset': offset, 'limit': limit, 'id':lst_todo_first_id}
         kb = get_inline_kb(width = len(buttons_acts)-1, *buttons_acts, **params)
-        msg = await callback.message.edit_text(text=res_text, reply_markup=kb)
-        await state.update_data(msg=msg.message_id)
+        await callback.message.edit_text(text=res_text, reply_markup=kb)
 
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='edit'))
@@ -95,27 +96,56 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
     kb = get_inline_kb(*buttons, **params)
     if not res_text:
         res_text = 'выберете какое задание изменить: '
-    msg = await callback.message.edit_text(text=res_text, reply_markup=kb)
-    await state.update_data(msg=msg.message_id)
-
-@router.callback_query(CallbackFactoryTodo.filter(F.act.startswith('task')))
-async def process_edit_selected_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
-                                     state: FSMContext):
-    await callback.answer()
-    print(100*'-', callback_data.act, 100*'-', sep='\n')
-    for i in range(callback_data.limit):
-        if callback_data.act[4] == str(i):
-            await state.update_data(num=i)
-            break
-    buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU')
-    kb = get_inline_kb(*buttons, width=3)
-    await callback.message.edit_text(text=phrases.process_edit, reply_markup=kb)
+    await callback.message.edit_text(text=res_text, reply_markup=kb)
     await state.set_state(FSMTodoEdit.edit)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'delete'))
-async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, ext_api_manager: MyExternalApiForBot, state: FSMContext):
+async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     await callback.answer()
-    start_to_view = (await state.get_data())
+    res_text = None
+    task_list = (await state.get_data()).get('task_list')
+    buttons = []
+    if task_list:
+        cur_num = 1
+        buttons = []
+        for i in task_list:
+            buttons.append('task' + str(cur_num) + ' - ' + i.get('name'))
+            cur_num += 1
+    else:
+        res_text = 'список заданий пуст'
+    buttons.append('MENU')
+    params = {'limit': callback_data.limit, 'id': callback_data.id}
+    kb = get_inline_kb(*buttons, **params)
+    if not res_text:
+        res_text = 'выберете какое задание удалить: '
+    await callback.message.edit_text(text=res_text, reply_markup=kb)
+    await state.set_state(FSMTodoEdit.delete_task)
+
+@router.callback_query(CallbackFactoryTodo.filter(F.act.startswith('task')))
+async def process_edit_selected_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
+                                     state: FSMContext, ext_api_manager: MyExternalApiForBot):
+    await callback.answer()
+    print(100*'-', callback_data.act, 100*'-', sep='\n')
+    num = 0
+    for i in range(1, callback_data.limit+1):
+        if callback_data.act[4] == str(i):
+            num=i-1
+            break
+    cur_task = (await state.get_data()).get('task_list')[num]
+    await state.update_data(cur_task=cur_task)
+    if (await state.get_state()) == FSMTodoEdit.edit:
+        buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU')
+        kb = get_inline_kb(*buttons, width=3)
+        await callback.message.edit_text(text=phrases.process_edit, reply_markup=kb)
+    else:
+        buttons = 'MENU'
+        kb = get_inline_kb(buttons)
+        await ext_api_manager.remove(prefix='todo', ident=callback_data.id)
+        await callback.message.edit_text(text=phrases.delete_task.format(cur_task.get('name')), reply_markup=kb)
+
+
+
+
 
 
 

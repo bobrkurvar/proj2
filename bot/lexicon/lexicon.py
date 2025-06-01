@@ -13,7 +13,6 @@ FILL_TODO_LEXICON: dict[str, str] = {
     "created": "\t\t\t <b>ЗАДАЧА СОЗДАНА</b>\n\n"
               "можете ознакомиться с ней в спике, нажва кнопку - list",
 
-    "delete": "\t\t\t <b>ВВЕДИТЕ ИМЯ ЗАДАЧИ ДЛЯ УДАЛЕНИЯ\n\n</b>"
 }
 
 TASK_LIST_VIEW = {
@@ -31,6 +30,8 @@ EDIT_TASK = {
     'edit_name': '<b>ВВЕДИТЕ НОВОЕ ИМЯ ЗАДАНИЯ\n\n</b>',
 
     'edit_content': '<b>ВВЕДИТЕ НОВОЕ ТЕЛО ЗАДАНИЯ\n\n</b>',
+
+    'delete_task': '<b>ЗАДАНИЕ {} УДАЛЕНО\n\n</b>',
 }
 
 

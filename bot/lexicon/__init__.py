@@ -14,6 +14,6 @@ class Phrases(BaseModel):
     empty_todo_list: str  = lexicon.TASK_LIST_VIEW['empty_list']
     edit_task: str  = lexicon.EDIT_TASK['edit']
     process_edit: str  = lexicon.EDIT_TASK['process_edit']
-    delete_task: str  = lexicon.FILL_TODO_LEXICON['delete']
+    delete_task: str  = lexicon.EDIT_TASK['delete_task']
 
 phrases = Phrases()

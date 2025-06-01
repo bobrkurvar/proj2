@@ -24,7 +24,7 @@ class MyExternalApiForBot:
 
     @handle_ext_api
     async def remove(self, prefix: str, **args):
-        await self._session.get(self._url + prefix + '/delete', params=args)
+        await self._session.delete(self._url + prefix + '/delete', params=args)
 
     @handle_ext_api
     async def read(self, prefix: str, **kwargs):
