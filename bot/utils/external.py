@@ -44,7 +44,7 @@ class MyExternalApiForBot:
 
     async def close(self):
         if self._session:
-            log.info(f'закрываю сессию {self.__class__.__name__}')
+            log.warning(f'закрываю сессию {self.__class__.__name__}')
             await self._session.close()
             self._session = None
 

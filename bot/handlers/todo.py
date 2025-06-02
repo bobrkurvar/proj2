@@ -135,7 +135,6 @@ async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFa
 async def process_edit_selected_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                      state: FSMContext, ext_api_manager: MyExternalApiForBot):
     await callback.answer()
-    print(100*'-', callback_data.act, 100*'-', sep='\n')
     num = 0
     for i in range(1, callback_data.limit+1):
         if callback_data.act[4] == str(i):

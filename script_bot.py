@@ -9,8 +9,9 @@ from bot.filters.states import CustomRedisStorage
 import asyncio
 from bot.utils import ext_api_manager
 
-log = logging.getLogger('proj.script_bot')
-log.setLevel(logging.DEBUG)
+log = logging
+log.basicConfig(level=logging.DEBUG,
+                format='[%(asctime)s] #%(levelname)-8s %(filename)s:%(lineno)d - %(name)s - %(message)s')
 
 async def main():
     try:

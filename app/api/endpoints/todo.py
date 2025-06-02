@@ -12,14 +12,16 @@ log = logging.getLogger('proj.endpoints.todo')
 
 @router.get('/read')
 async def read_todo_list(ident: str, ident_val: int, limit: int, offset: int = 0):
+    log.debug('запрос на чтение задач по %s со значением: %s', ident, ident_val)
     res = await manager.read(Todo, ident=ident, ident_val=ident_val, limit=limit, offset=offset)
-    log.info('запрос на чтение задач по %s со значением: %s', ident, ident_val)
+    log.info('прочитане пользователь: %s', ident_val)
     return res
 
 @router.post('/create')
 async def create_task(todo: TodoInput):
     todo: dict[str, Any] = todo.model_dump()
     todo.update(deadline=date(**todo['deadline']))
+    log.debug('запрос на создание задания')
     todo_id = await manager.create(Todo, **todo)
     log.info("задание %s добавлено", todo_id)
     return todo_id
@@ -44,8 +46,10 @@ async def update_task(todo: TodoUpdate):
     else:
         todo_data.update(deadline=date(day=todo_data['deadline']['day'], month=todo_data['deadline']['month'], year=todo_data['deadline']['year']))
         for_update.append('deadline')
-    log.info('в задании %s обновлены данные параметры: %s', todo.ident, for_update)
+    log.debug('запрос на обновление в задании '
+             '%s параметров: %s', todo.ident_val, *for_update)
     await manager.update(Todo, **todo_data)
+    log.info('в задаче: %s обновлены параметры: %s', todo.ident_val, *for_update)
 
 
 @router.delete('/delete')
