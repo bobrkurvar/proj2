@@ -1,4 +1,5 @@
 from core import conf, logger
+import logging
 from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher
 from redis.asyncio import Redis
@@ -8,25 +9,33 @@ from bot.filters.states import CustomRedisStorage
 import asyncio
 from bot.utils import ext_api_manager
 
+log = logging.getLogger('proj.script_bot')
+log.setLevel(logging.DEBUG)
 
 async def main():
     try:
         bot = Bot(conf.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+        # try:
+        #     redis = Redis(host='localhost')
+        #     storage = CustomRedisStorage(redis=redis, state_ttl=3600)
+        # except:
+        #     log.error('не удалось поключиться к redis, использую MemoryStorage')
+        #     storage = MemoryStorage()
         redis = Redis(host='localhost')
         storage = CustomRedisStorage(redis=redis, state_ttl=3600)
         dp = Dispatcher(storage=storage)
         await ext_api_manager.connect()
         dp['ext_api_manager'] = ext_api_manager
         dp.include_router(main_router)
-        logger.debug('НАЧАЛО РАБОТЫ БОТА')
+        log.debug('НАЧАЛО РАБОТЫ БОТА')
         await dp.start_polling(bot)
     finally:
         try:
             if ext_api_manager:
                 await ext_api_manager.close()
-            print(100*'-', 'ЗАКРЫТИЕ СОЕДИНЕНИЯ ВНЕШНЕГО API', 100*'-', sep='\n')
+            log.debug('ЗАКРЫТИЕ СОЕДИНЕНИЯ ВНЕШНЕГО API')
         except Exception:
-            logger.info('ПОДКЛЮЧЕНИЕ НЕ БЫЛО ЗАКРЫТО')
+            log.error('ПОДКЛЮЧЕНИЕ НЕ БЫЛО ЗАКРЫТО')
 
 if __name__ == "__main__":
     asyncio.run(main())

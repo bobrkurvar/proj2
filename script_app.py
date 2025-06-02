@@ -3,6 +3,7 @@ from app.api.endpoints import main_router
 from app.exceptions.handlers import custom_exception_handler, global_exception_handler
 from app.exceptions.custom_errors import CustomDbException
 from contextlib import asynccontextmanager
+from core import logger
 from db import manager
 
 @asynccontextmanager

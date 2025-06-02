@@ -1,7 +1,7 @@
 from aiogram.filters import BaseFilter
 from aiogram.types import Message
 from datetime import date
-from bot.utils.send_later import leap_year
+from bot.utils.tasks import leap_year
 
 dict_days = dict()
 dict_31 = dict.fromkeys([1,3,5,7,8,10,12], 31)
