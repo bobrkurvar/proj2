@@ -45,3 +45,32 @@ async def send_later(bot: Bot, chat_id: int, start: date | list, end: date | dic
     buttons = ('delete', 'complete', 'change deadline')
     kb = get_inline_kb(*buttons, width=3, id=todo_id)
     await bot.send_message(chat_id=chat_id, text=text, reply_markup=kb)
+
+async def delete_messages(bot: Bot, chat_id: int, message_id: int, timeout: int, state: FSMContext):
+    task = (await state.get_data()).get('prev_back_task')
+    if task:
+        try:
+            await task.cancel()
+        except:
+            pass
+    #await state.update_data(message_delete=message_id)
+    await asyncio.sleep(timeout)
+    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+
+# async def make_task_delete_messages(bot: Bot, chat_id: int, message_id: int, timeout: int, state: FSMContext):
+#     tasks = []
+#     while True:
+#         task = asyncio.create_task(delete_messages(bot, chat_id, message_id, timeout, state))
+#         if task in tasks:
+#             try:
+#                 task.cancel()
+#             except:
+#                 pass
+#         else:
+#             tasks.append(task)
+#         await task
+#         await state.update_data(prev_back_task=task)
+#         await asyncio.sleep(timeout)
+
+
+
