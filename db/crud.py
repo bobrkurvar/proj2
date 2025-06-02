@@ -3,6 +3,9 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.exceptions import CustomDbException
 from functools import wraps
+import logging
+
+log = logging.getLogger('proj.db')
 
 def handle_db_operation(func):
     @wraps(func)

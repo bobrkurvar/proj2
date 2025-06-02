@@ -1,7 +1,9 @@
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientConnectorError
-from core import logger
+import logging
 from functools import wraps
+
+log = logging.getLogger('proj.bot.utils')
 
 def handle_ext_api(func):
     @wraps(func)
@@ -9,7 +11,7 @@ def handle_ext_api(func):
         try:
             return await func(self, *args, **kwargs)
         except ClientConnectorError:
-            logger.error('поключение не установлено')
+            log.error('поключение не установлено')
     return wrapper
 
 class MyExternalApiForBot:
@@ -42,7 +44,7 @@ class MyExternalApiForBot:
 
     async def close(self):
         if self._session:
-            logger.info(f'закрываю сессию {self.__class__.__name__}')
+            log.info(f'закрываю сессию {self.__class__.__name__}')
             await self._session.close()
             self._session = None
 
