@@ -30,7 +30,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
 
     send_message = True
     lst_todo_first_id = 0
-    if(emtpy_lst):
+    if emtpy_lst:
         if callback_data.act == 'list':
             try:
                 next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset+limit))
@@ -41,7 +41,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         elif callback_data.act == '>>':
             full_data = await state.get_data()
             cur_page = full_data.get('next_page')
-            if(cur_page):
+            if cur_page:
                 prev_page=full_data.get('task_list')
                 try:
                     next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset + limit))
@@ -54,7 +54,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         elif callback_data.act == '<<':
             full_data = await state.get_data()
             cur_page = full_data.get('prev_page')
-            if(cur_page):
+            if cur_page:
                 prev_page = None
                 if offset >= limit:
                     prev_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset - limit))
