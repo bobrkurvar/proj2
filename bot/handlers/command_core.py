@@ -18,14 +18,7 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
     await ext_api_manager.create(prefix = 'user', **user)
     buttons = ('list', 'create')
     limit = 3
-    lst_todo = (await state.get_data()).get('task_list')
-    if lst_todo is None:
-        try:
-            lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=message.from_user.id, limit=limit))
-        except TypeError:
-            lst_todo = list()
-        await state.update_data(task_list=lst_todo)
-    kb = get_inline_kb(*buttons, doer_id=message.from_user.id, limit=limit)
+    kb = get_inline_kb(*buttons, doer_id=message.from_user.id, limit=limit, offset=0)
     await message.delete()
     data = await state.get_data()
     msg = data.get('msg')
@@ -68,14 +61,13 @@ async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_a
     await ext_api_manager.create(prefix='user', **user)
     buttons = ('list', 'create')
     limit = 3
-    lst_todo = (await state.get_data()).get('task_list')
+    lst_todo = (await state.get_data()).get('pages')
     if lst_todo is None:
         try:
-            lst_todo = list(
-                await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
+            lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
         except TypeError:
             lst_todo = list()
-        await state.update_data(task_list=lst_todo)
+        await state.update_data(pages=lst_todo)
     kb = get_inline_kb(*buttons, doer_id=callback.from_user.id, limit=limit)
     await callback.message.edit_text(text=phrases.start, reply_markup=kb)
 
@@ -83,15 +75,8 @@ async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_a
 async def process_press_button_menu(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext, ext_api_manager: MyExternalApiForBot):
     await callback.answer()
     data = await state.get_data()
-    lst_todo = data.get('task_list')
     await state.clear()
-    limit = callback_data.limit
-    if not lst_todo:
-        try:
-            lst_todo = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit))
-        except TypeError:
-            lst_todo = list()
-        data.update(task_list=lst_todo)
+    limit = 3
     await state.update_data(data)
     buttons = ('list', 'create')
     kb = get_inline_kb(*buttons, limit=limit, doer_id=callback.from_user.id)

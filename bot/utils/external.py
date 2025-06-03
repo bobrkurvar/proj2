@@ -11,7 +11,7 @@ def handle_ext_api(func):
         try:
             return await func(self, *args, **kwargs)
         except ClientConnectorError:
-            log.error('поключение не установлено')
+            log.warning('поключение не установлено')
     return wrapper
 
 class MyExternalApiForBot:

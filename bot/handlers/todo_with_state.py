@@ -42,16 +42,18 @@ async def process_create_task_content(message: Message, state: FSMContext):
 
 @router.message(IsDate(), StateFilter(FSMTodoFill.fill_deadline))
 async def process_create_task_deadline_success(message: Message, state: FSMContext, ext_api_manager: MyExternalApiForBot):
-    data = await state.get_data()
-    msg = (await state.get_data()).get('msg')
+    data = {i: j for i, j in (await state.get_data()) if i != 'name' and i != 'content'}
+    msg = data.get('msg')
+    data.pop('msg')
+    to_update = {i: j  for i, j in data if i == 'name' or i == 'content'}
     deadline = to_date_dict(message.text)
-    del data['msg']
-    data.update(doer_id=message.from_user.id, deadline=deadline)
+    to_update.update(doer_id=message.from_user.id, deadline=deadline)
     buttons_text = 'menu'
-    kb = get_inline_kb(buttons_text, doer_id=message.from_user.id, limit=3)
-    await ext_api_manager.create('todo', **data)
+    kb = get_inline_kb(buttons_text, doer_id=message.from_user.id)
+    await ext_api_manager.create('todo', **to_update)
     await message.bot.edit_message_text(chat_id = message.chat.id, message_id=msg, text=phrases.created_todo, reply_markup=kb)
     await message.delete()
+    await state.update_data()
     await state.clear()
 
 @router.message(StateFilter(FSMTodoFill.fill_deadline))

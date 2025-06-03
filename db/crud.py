@@ -58,4 +58,12 @@ class Crud:
     async def close_and_dispose(self):
         await self._engine.dispose()
 
+if __name__ == "__main__":
+    import asyncio
+    from bot.utils import ext_api_manager
+    async def main():
+        await ext_api_manager.connect()
+        todos = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=1295347345, limit=3, offset=3))
+        print(todos)
+    asyncio.run(main())
 

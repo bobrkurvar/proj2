@@ -3,106 +3,63 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.state import default_state
-from bot.utils import MyExternalApiForBot
+
+from bot.utils import MyExternalApiForBot, miss_pages_cache
 
 from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import phrases
 from bot.filters.states import FSMTodoEdit
+import logging
 
 router = Router()
 
+log = logging.getLogger('proj.bot.handlers.todo')
+
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})),
                        StateFilter(default_state))
+@miss_pages_cache
 async def process_user_todo_list_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                         ext_api_manager: MyExternalApiForBot, state: FSMContext):
     await callback.answer()
-    limit = 3
+    limit = callback_data.limit
 
     offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
                '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
 
     offset: int = offsets[callback_data.act]
-    emtpy_lst = (await state.get_data()).get('task_list')
+    log.debug('offset: %s limit: %s', offset, limit)
+    pages = (await state.get_data()).get('pages').get(str(offset))
+    log.debug('pages: %s', pages)
+    text = ' '
+    for i in pages:
+        text += phrases.list_todo_view.format(i.get('name'), i.get('content'), i.get('deadline'))
 
-    query_flag = False
-
-    if emtpy_lst is None:
-        try:
-            emtpy_lst = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset))
-        except TypeError:
-            emtpy_lst = list()
-        await state.update_data(task_list=emtpy_lst)
-        query_flag = True
-
-    send_message = True
-    lst_todo_first_id = 0
-    if emtpy_lst:
-        if callback_data.act == 'list':
-            try:
-                next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset+limit))
-            except TypeError:
-                next_page = None
-            await state.update_data({'next_page': next_page, 'prev_page': None})
-
-        elif callback_data.act == '>>':
-            full_data = await state.get_data()
-            cur_page = full_data.get('task_list') if query_flag else full_data.get('next_page')
-            if(cur_page):
-                try:
-                    next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset + limit))
-                except TypeError:
-                    next_page = None
-
-                prev_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset - limit)) if offset >= limit else None if query_flag else full_data.get('task_list')
-                await state.update_data({"prev_page": prev_page, "task_list": cur_page, "next_page": next_page})
-            else:
-                send_message = False
-
-        elif callback_data.act == '<<':
-            full_data = await state.get_data()
-            cur_page = full_data.get('task_list') if query_flag else full_data.get('prev_page')
-            if cur_page:
-                prev_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id,limit=limit, offset=offset - limit)) if offset >= limit else None
-                if query_flag:
-                    next_page = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset + limit))
-                else:
-                    next_page = full_data.get('task_list')
-                await state.update_data({'prev_page': prev_page, "task_list": cur_page, "next_page": next_page})
-            else:
-                send_message = False
-
-        lst_todo =(await state.get_data()).get('task_list')
-        res_text = ''
-        lst_todo_first_id = lst_todo[0].get('id')
-        for i in lst_todo:
-            res_text += phrases.list_todo_view.format(i.get('name'), i.get('content'), i.get('deadline'))
-    else:
-        res_text = phrases.empty_todo_list
-
-    if send_message:
-        buttons_acts = ('<<', 'DELETE', 'EDIT', '>>', 'MENU')
-        params = {'doer_id': callback.from_user.id, 'offset': offset, 'limit': limit, 'id':lst_todo_first_id}
-        kb = get_inline_kb(width = len(buttons_acts)-1, *buttons_acts, **params)
-        await callback.message.edit_text(text=res_text, reply_markup=kb)
+    buttons = ['<<', 'EDIT', 'DELETE', '>>', 'MENU']
+    params = dict(offset=offset, limit=limit, doer_id=callback.from_user.id)
+    kb=get_inline_kb(width=4, *buttons, **params)
+    try:
+        await callback.message.edit_text(text=text, reply_markup=kb)
+    except Exception:
+        pass
 
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='edit'))
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     await callback.answer()
     res_text = None
-    task_list = (await state.get_data()).get('task_list')
+    pages = (await state.get_data()).get('pages').get(callback_data.offset)
     buttons = []
-    if task_list:
+    if pages:
         cur_num = 1
         buttons = []
-        for i in task_list:
+        for i in pages:
             buttons.append('task'+str(cur_num)+ ' - ' + i.get('name'))
             cur_num += 1
     else:
         res_text = 'список заданий пуст'
     buttons.append('MENU')
-    params = {'limit': callback_data.limit, 'id': callback_data.id}
+    params = {'limit': callback_data.limit, 'id': callback_data.id, 'offset': callback_data.offset}
     kb = get_inline_kb(*buttons, **params)
     if not res_text:
         res_text = 'выберете какое задание изменить: '
@@ -113,12 +70,12 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
 async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     await callback.answer()
     res_text = None
-    task_list = (await state.get_data()).get('task_list')
+    pages = (await state.get_data()).get('pages').get(callback_data.offset)
     buttons = []
-    if task_list:
+    if pages:
         cur_num = 1
         buttons = []
-        for i in task_list:
+        for i in pages:
             buttons.append('task' + str(cur_num) + ' - ' + i.get('name'))
             cur_num += 1
     else:
@@ -140,7 +97,7 @@ async def process_edit_selected_task(callback: CallbackQuery, callback_data: Cal
         if callback_data.act[4] == str(i):
             num=i-1
             break
-    cur_task = (await state.get_data()).get('task_list')[num]
+    cur_task = (await state.get_data()).get('pages').get(callback_data.offset)[num]
     await state.update_data(cur_task=cur_task)
     if (await state.get_state()) == FSMTodoEdit.edit:
         buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU')
