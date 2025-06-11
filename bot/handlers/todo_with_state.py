@@ -51,16 +51,16 @@ async def process_create_task_deadline_success(message: Message, state: FSMConte
     buttons_text = 'menu'
     kb = get_inline_kb(buttons_text, doer_id=message.from_user.id)
     await ext_api_manager.create('todo', **to_update)
-    await message.bot.edit_message_text(chat_id = message.chat.id, message_id=msg, text=phrases.created_todo, reply_markup=kb)
-    await message.delete()
-    await state.update_data()
+    msg = await message.bot.edit_message_text(chat_id = message.chat.id, message_id=msg, text=phrases.created_todo, reply_markup=kb)
+    #await message.delete()
+    await state.update_data(msg=msg)
     await state.clear()
 
 @router.message(StateFilter(FSMTodoFill.fill_deadline))
 async def process_create_task_deadline_fail(message: Message, state: FSMContext):
     msg = (await state.get_data()).get('msg')
     await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.fail_fill_deadline)
-    await message.delete()
+    #await message.delete()
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})), StateFilter(FSMTodoEdit.edit))
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,state: FSMContext):
@@ -96,7 +96,7 @@ async def process_edit_todo(message: Message, state: FSMContext, ext_api_manager
     msg = (await state.get_data()).get('msg')
     await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.start, reply_markup=kb)
     (await state.get_data()).pop('msg')
-    await message.delete()
+    #await message.delete()
     await state.clear()
 
 @router.message(StateFilter(FSMTodoEdit.edit_date))
@@ -105,12 +105,12 @@ async def process_fail_edit_deadline(message: Message, state: FSMContext):
     send_message = await message.answer(text=phrases.fail_fill_deadline)
     await state.update_data(msg=send_message.message_id)
     await message.bot.delete_message(chat_id = message.chat.id, message_id = bot_message_id)
-    await message.delete()
+    #await message.delete()
 
 
-@router.message(StateFilter(FSMTodoEdit.edit))
-async def delete_misplaced_message(message: Message):
-    await message.delete()
+# @router.message(StateFilter(FSMTodoEdit.edit))
+# async def delete_misplaced_message(message: Message):
+#     await message.delete()
 
 
 
