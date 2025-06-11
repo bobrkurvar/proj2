@@ -13,6 +13,7 @@ router = Router(name="command_core")
 
 @router.message(CommandStart())
 async def process_command_start(message: Message, ext_api_manager: MyExternalApiForBot, state: FSMContext):
+    print(50*'-', 'START', 50*'-')
     user = {'id': message.from_user.id, 'first_name': message.from_user.first_name,
             'last_name': message.from_user.last_name}
     await ext_api_manager.create(prefix = 'user', **user)
@@ -24,8 +25,10 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
     msg = data.get('msg')
     if msg:
         try:
+            print(50*'-', 'TRY EDIT MESSAGE', 50*'-')
             await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.start, reply_markup=kb)
         except Exception:
+            print(50 * '-', 'FAILED EDIT MESSAGE', 50 * '-')
             msg = await message.answer(text=phrases.start, reply_markup=kb)
             data.update(msg=msg.message_id)
     else:

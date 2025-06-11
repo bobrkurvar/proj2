@@ -27,6 +27,7 @@ async def main():
         dp = Dispatcher(storage=storage)
         await ext_api_manager.connect()
         dp['ext_api_manager'] = ext_api_manager
+        dp['bot'] = bot
         dp.include_router(main_router)
         dp.callback_query.middleware(CallbackAnswerMiddleware())
         log.debug('НАЧАЛО РАБОТЫ БОТА')

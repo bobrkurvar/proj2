@@ -42,7 +42,7 @@ async def process_create_task_content(message: Message, state: FSMContext):
 
 @router.message(IsDate(), StateFilter(FSMTodoFill.fill_deadline))
 async def process_create_task_deadline_success(message: Message, state: FSMContext, ext_api_manager: MyExternalApiForBot):
-    data = {i: j for i, j in (await state.get_data()) if i != 'name' and i != 'content'}
+    data = {i: j for i, j in (await state.get_data()).items() if i != 'name' and i != 'content'}
     msg = data.get('msg')
     data.pop('msg')
     to_update = {i: j  for i, j in data if i == 'name' or i == 'content'}
@@ -59,7 +59,7 @@ async def process_create_task_deadline_success(message: Message, state: FSMConte
 @router.message(StateFilter(FSMTodoFill.fill_deadline))
 async def process_create_task_deadline_fail(message: Message, state: FSMContext):
     msg = (await state.get_data()).get('msg')
-    await message.bot.edit_message_text(chat_id=message.chat.it, message_id=msg, text=phrases.fail_fill_deadline)
+    await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.fail_fill_deadline)
     await message.delete()
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})), StateFilter(FSMTodoEdit.edit))

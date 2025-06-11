@@ -4,7 +4,8 @@ from aiogram.types import CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.state import default_state
 
-from bot.utils import MyExternalApiForBot, miss_pages_cache
+from bot.utils import MyExternalApiForBot
+from bot.utils.middleware import InCachePageMiddleware
 
 from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
@@ -13,15 +14,14 @@ from bot.filters.states import FSMTodoEdit
 import logging
 
 router = Router()
-router.callback_query.outer_middleware()
+router.callback_query.middleware(InCachePageMiddleware())
 
 log = logging.getLogger('proj.bot.handlers.todo')
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})),
                        StateFilter(default_state))
-@miss_pages_cache
 async def process_user_todo_list_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
-                                        ext_api_manager: MyExternalApiForBot, state: FSMContext):
+                                        state: FSMContext):
     limit = callback_data.limit
 
     offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
@@ -38,14 +38,11 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
     buttons = ['<<', 'EDIT', 'DELETE', '>>', 'MENU']
     params = dict(offset=offset, limit=limit, doer_id=callback.from_user.id)
     kb=get_inline_kb(width=4, *buttons, **params)
-    try:
+    if text != callback.message.text:
         await callback.message.edit_text(text=text, reply_markup=kb)
-    except Exception:
-        pass
 
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='edit'))
-@miss_pages_cache
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='edit'), StateFilter(default_state))
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     res_text = None
     pages = (await state.get_data()).get('pages').get(callback_data.offset)
@@ -66,7 +63,7 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
     await callback.message.edit_text(text=res_text, reply_markup=kb)
     await state.set_state(FSMTodoEdit.edit)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'delete'))
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'delete'), StateFilter(default_state))
 async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     res_text = None
     pages = (await state.get_data()).get('pages').get(callback_data.offset)
@@ -87,7 +84,7 @@ async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFa
     await callback.message.edit_text(text=res_text, reply_markup=kb)
     await state.set_state(FSMTodoEdit.delete_task)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.startswith('task')))
+@router.callback_query(CallbackFactoryTodo.filter(F.act.startswith('task')), StateFilter(default_state))
 async def process_edit_selected_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                      state: FSMContext, ext_api_manager: MyExternalApiForBot):
     num = 0
