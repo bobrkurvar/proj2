@@ -45,6 +45,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
 
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='edit'))
+@miss_pages_cache
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     await callback.answer()
     res_text = None

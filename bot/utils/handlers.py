@@ -53,4 +53,3 @@ def miss_pages_cache(func):
         await state.update_data(pages=pages)
         await func(callback, callback_data, ext_api_manager, state, *args, **kwargs)
     return wrapper
-
