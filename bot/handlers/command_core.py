@@ -55,7 +55,6 @@ async def process_delete_unknown(message: Message, state: FSMContext):
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='start'))
 async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_api_manager: MyExternalApiForBot):
-    await callback.answer()
     user = {'id': callback.from_user.id, 'first_name': callback.from_user.first_name,
             'last_name': callback.from_user.last_name}
     await ext_api_manager.create(prefix='user', **user)
@@ -73,7 +72,6 @@ async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_a
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='menu'))
 async def process_press_button_menu(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext, ext_api_manager: MyExternalApiForBot):
-    await callback.answer()
     data = await state.get_data()
     await state.clear()
     limit = 3

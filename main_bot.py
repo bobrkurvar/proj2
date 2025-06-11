@@ -7,6 +7,7 @@ from aiogram.enums import ParseMode
 from bot.handlers import main_router
 from aiogram.fsm.storage.memory import MemoryStorage
 from bot.filters.states import CustomRedisStorage
+from aiogram.utils.callback_answer import CallbackAnswerMiddleware
 import asyncio
 from bot.utils import ext_api_manager
 
@@ -27,6 +28,7 @@ async def main():
         await ext_api_manager.connect()
         dp['ext_api_manager'] = ext_api_manager
         dp.include_router(main_router)
+        dp.callback_query.middleware(CallbackAnswerMiddleware())
         log.debug('НАЧАЛО РАБОТЫ БОТА')
         await dp.start_polling(bot)
     finally:

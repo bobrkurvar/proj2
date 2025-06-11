@@ -8,7 +8,6 @@ import logging
 
 log = logging.getLogger('proj.bot.external.handlers')
 
-
 def to_date(str_data : str) -> date | None:
     try:
         day, mnt, year = (int(d) for d in str_data.split('.'))

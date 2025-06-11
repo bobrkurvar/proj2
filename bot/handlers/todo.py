@@ -13,6 +13,7 @@ from bot.filters.states import FSMTodoEdit
 import logging
 
 router = Router()
+router.callback_query.outer_middleware()
 
 log = logging.getLogger('proj.bot.handlers.todo')
 
@@ -21,7 +22,6 @@ log = logging.getLogger('proj.bot.handlers.todo')
 @miss_pages_cache
 async def process_user_todo_list_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                         ext_api_manager: MyExternalApiForBot, state: FSMContext):
-    await callback.answer()
     limit = callback_data.limit
 
     offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
@@ -47,7 +47,6 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='edit'))
 @miss_pages_cache
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
-    await callback.answer()
     res_text = None
     pages = (await state.get_data()).get('pages').get(callback_data.offset)
     buttons = []
@@ -69,7 +68,6 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'delete'))
 async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
-    await callback.answer()
     res_text = None
     pages = (await state.get_data()).get('pages').get(callback_data.offset)
     buttons = []
@@ -92,7 +90,6 @@ async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFa
 @router.callback_query(CallbackFactoryTodo.filter(F.act.startswith('task')))
 async def process_edit_selected_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                      state: FSMContext, ext_api_manager: MyExternalApiForBot):
-    await callback.answer()
     num = 0
     for i in range(1, callback_data.limit+1):
         if callback_data.act[4] == str(i):
