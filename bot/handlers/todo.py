@@ -28,20 +28,18 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
                '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
 
     offset: int = offsets[callback_data.act]
-    log.debug('offset: %s limit: %s', offset, limit)
     pages = (await state.get_data()).get('pages').get(str(offset))
     log.debug('pages: %s', pages)
     text = ' '
     for i in pages:
         text += phrases.list_todo_view.format(i.get('name'), i.get('content'), i.get('deadline'))
 
+    if text == ' ':
+        text = phrases.empty_todo_list
     buttons = ['<<', 'EDIT', 'DELETE', '>>', 'MENU']
-    kb_data = dict(offset=offset, limit=limit, doer_id=callback.from_user.id)
-    #kb=get_inline_kb(width=4, *buttons, **params)
+    kb_data = dict(offset=offset, limit=limit, doer_id=callback.from_user.id, width=4)
     # Закидываю данные для мидлвари вывода сообщений
-    await state.update_data(kb_data=kb_data, buttouns=buttons, text=text)
-    # if text != callback.message.text:
-    #     await callback.message.edit_text(text=text, reply_markup=kb)
+    await state.update_data(kb_data=kb_data, buttons=buttons, text=text)
 
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='edit'), StateFilter(default_state))

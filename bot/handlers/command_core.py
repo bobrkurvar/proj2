@@ -50,10 +50,8 @@ async def process_press_button_menu(callback: CallbackQuery, callback_data: Call
     limit = 3
     buttons = ('list', 'create')
     kb_data = dict(limit=limit, doer_id=callback.from_user.id)
-    #kb = get_inline_kb(*buttons, limit=limit, doer_id=callback.from_user.id)
-    await state.update_data(text=phrases.start, kb_data=kb_data, buttons=buttons)
-    #await callback.message.edit_text(text=phrases.start, reply_markup=kb)
     await state.clear()
+    await state.update_data(text=phrases.start, kb_data=kb_data, buttons=buttons)
 
 # @router.message(StateFilter(default_state))
 # async def process_spam(message: Message):

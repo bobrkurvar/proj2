@@ -3,6 +3,7 @@ from aiogram.types import TelegramObject, Message, CallbackQuery
 from typing import Any, Callable, Awaitable
 import logging
 from bot.utils.keyboards import get_inline_kb
+from aiogram.exceptions import TelegramBadRequest
 
 log = logging.getLogger('proj2.middleware')
 
@@ -65,30 +66,38 @@ class SendAnswerOrEdit(BaseMiddleware):
                        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
                        event: TelegramObject,
                        data: dict[str, Any]):
-        message = event.callback_query.message if event.callback_query else event.message
         state = data.get('state') #сохраняю инфу о message_id из state до того как в handler она отчистится
         msg = (await state.get_data()).get('msg') #передаю в handler
         result = await handler(event, data)
         state_data = await state.get_data() #обновлённая хэндлером инфа из state
+        log.debug("state_data: %s", state_data)
         text = state_data.get('text')  #текст ответа
         state_data.pop('text')
         kb_data = state_data.get('kb_data')
         state_data.pop('kb_data')            #инфа для клавиатуры
         buttons = state_data.get('buttons')
         state_data.pop('buttons')
-        log.debug("state_data: %s", state_data)
         kb = get_inline_kb(*buttons, **kb_data)
-        if msg:
-            log.debug('в хранилище сообщение %s', msg)
-            if text != message.text:
+
+        if event.callback_query:
+            callback = event.callback_query
+            log.debug('event callback_query')
+            if text != callback.message.text:
+                # log.debug('text: %s', text)
+                # log.debug('old_text: %s', callback.message.text)
+                msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
+
+        elif event.message:
+            message = event.message
+            log.debug('event message')
+            if msg:
                 try:
-                    msg = (await message.edit_text(text=text, reply_markup=kb)).message_id
-                except:
-                    log.debug('сообщения с id %s уже нет', msg)
-                    msg = (await message.answer(text=text, reply_markup=kb)).message_id
-        else:
-            msg = (await message.answer(text=text, reply_markup=kb)).message_id
-            log.debug('отослано сообщение %s', msg)
+                    await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
+                except TelegramBadRequest:
+                    log.debug('сообщение %s нет в чате', msg)
+            msg=(await message.answer(text=text, reply_markup=kb)).message_id
+
         state_data.update(msg=msg)
-        await state.update_data(state_data)
+        log.debug('state_data after handler: %s', state_data)
+        await state.set_data(state_data)
         return result
