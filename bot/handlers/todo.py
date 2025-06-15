@@ -38,8 +38,10 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         text = phrases.empty_todo_list
     buttons = ['<<', 'EDIT', 'DELETE', '>>', 'MENU']
     kb_data = dict(offset=offset, limit=limit, doer_id=callback.from_user.id, width=4)
-    # Закидываю данные для мидлвари вывода сообщений
-    await state.update_data(kb_data=kb_data, buttons=buttons, text=text)
+    kb = get_inline_kb(*buttons, **kb_data)
+    if text != callback.message.text:
+        msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
+        await state.update_data(msg=msg)
 
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='edit'), StateFilter(default_state))
