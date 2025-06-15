@@ -15,8 +15,7 @@ class InCachePageMiddleware(BaseMiddleware):
                        handler: Callable[[CallbackQuery, dict[str, Any]], Awaitable[Any]],
                        event: CallbackQuery,
                        data: dict[str, Any]):
-        callback = event
-        # Беру нужные объекты из data
+
         state, callback_data, ext_api_manager = data.get('state'), data.get('callback_data'), data.get('ext_api_manager')
         # Эти хэндлеры не имеют доп. логики
         if callback_data.act.lower() == 'delete' or callback_data.act.lower().startswith('task'):
@@ -32,7 +31,7 @@ class InCachePageMiddleware(BaseMiddleware):
         if pages is None:
             pages = {}
             try:
-                to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset))
+                to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
                 log.debug('PAGES IN NONE: to_update: %s', to_update)
                 pages.update({offset: to_update})
             except TypeError:
@@ -40,7 +39,7 @@ class InCachePageMiddleware(BaseMiddleware):
         # Если словарь со страницами есть, но текущей страницы там нет
         elif str(offset) not in pages.keys():
             try:
-                to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, limit=limit, offset=offset))
+                to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
                 log.debug('PAGES NOT HAVE OFFSET: to_update: %s', to_update)
                 pages.update({offset: to_update})
             except TypeError:
@@ -66,25 +65,23 @@ class SendAnswerOrEdit(BaseMiddleware):
                        handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
                        event: TelegramObject,
                        data: dict[str, Any]):
-        state = data.get('state') #сохраняю инфу о message_id из state до того как в handler она отчистится
-        msg = (await state.get_data()).get('msg') #передаю в handler
+        state = data.get('state') # сохраняю инфу о message_id из state до того как в handler она отчистится
+        old_data = await state.get_data()
         result = await handler(event, data)
-        state_data = await state.get_data() #обновлённая хэндлером инфа из state
-        log.debug("state_data: %s", state_data)
-        text = state_data.get('text')  #текст ответа
-        state_data.pop('text')
-        kb_data = state_data.get('kb_data')
-        state_data.pop('kb_data')            #инфа для клавиатуры
-        buttons = state_data.get('buttons')
-        state_data.pop('buttons')
+        new_data = await state.get_data() #обновлённая хэндлером инфа из state
+        text = new_data.get('text')  #текст ответа
+        new_data.pop('text')
+        kb_data = new_data.get('kb_data')
+        new_data.pop('kb_data')            #инфа для клавиатуры
+        buttons = new_data.get('buttons')
+        new_data.pop('buttons')
         kb = get_inline_kb(*buttons, **kb_data)
 
+        msg = old_data.get('msg')
         if event.callback_query:
             callback = event.callback_query
             log.debug('event callback_query')
             if text != callback.message.text:
-                # log.debug('text: %s', text)
-                # log.debug('old_text: %s', callback.message.text)
                 msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
 
         elif event.message:
@@ -97,7 +94,6 @@ class SendAnswerOrEdit(BaseMiddleware):
                     log.debug('сообщение %s нет в чате', msg)
             msg=(await message.answer(text=text, reply_markup=kb)).message_id
 
-        state_data.update(msg=msg)
-        log.debug('state_data after handler: %s', state_data)
-        await state.set_data(state_data)
+        old_data.update(msg=msg, *new_data)
+        await state.set_data(old_data)
         return result
