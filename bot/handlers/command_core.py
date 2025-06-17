@@ -61,10 +61,10 @@ async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_a
         await state.update_data(msg=msg)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='menu'))
-async def process_press_button_menu(callback: CallbackQuery, state: FSMContext):
+async def process_press_button_menu(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     data = await state.get_data()
     buttons = ('list', 'create')
-    kb_data = dict(limit=3, doer_id=callback.from_user.id)
+    kb_data = dict(limit=3, doer_id=callback.from_user.id, offset=callback_data.offset)
     kb = get_inline_kb(*buttons, **kb_data)
     if phrases.start != callback.message.text:
         msg = (await callback.message.edit_text(text=phrases.start, reply_markup=kb)).message_id

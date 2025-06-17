@@ -14,49 +14,56 @@ from bot.filters.custom_filters import IsDate
 router = Router()
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act == 'create'), StateFilter(default_state))
-async def process_create_task(callback: CallbackQuery, state: FSMContext):
-    buttons = ('menu', )
-    kb_data = dict()
-    await state.update_data(kb_data=kb_data, buttons=buttons, text=phrases.fill_todo_name)
+async def process_create_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
+    kb = get_inline_kb('MENU')
+    msg = (await callback.message.edit_text(text=phrases.fill_todo_name, reply_markup=kb)).message_id
+    await state.update_data(msg=msg, offset=callback_data.offset)
     await state.set_state(FSMTodoFill.fill_name)
 
 
 @router.message(StateFilter(FSMTodoFill.fill_name))
 async def process_create_task_name(message: Message, state: FSMContext):
-    buttons = ('menu', )
-    kb_data = dict()
-    await state.update_data(name=message.text, text=phrases.fill_todo_content, kb_data=kb_data, buttons=buttons)
+    kb = get_inline_kb('MENU')
+    msg = (await state.get_data()).get('msg')
+    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fill_todo_content, reply_markup=kb)).message_id
+    await state.update_data(msg=msg, name=message.text)
     await state.set_state(FSMTodoFill.fill_content)
 
 
 @router.message(StateFilter(FSMTodoFill.fill_content))
 async def process_create_task_content(message: Message, state: FSMContext):
-    buttons = ('menu', )
-    kb_data = dict()
-    await state.update_data(content=message.text, text=phrases.fill_todo_deadline, kb_data=kb_data, buttons=buttons)
+    kb = get_inline_kb('MENU')
+    msg = (await state.get_data()).get('msg')
+    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fill_todo_deadline, reply_markup=kb)).message_id
+    await state.update_data(msg=msg, content=message.text)
     await state.set_state(FSMTodoFill.fill_deadline)
 
 @router.message(IsDate(), StateFilter(FSMTodoFill.fill_deadline))
 async def process_create_task_deadline_success(message: Message, state: FSMContext, ext_api_manager: MyExternalApiForBot):
     data = await state.get_data()
     deadline = to_date_dict(message.text)
-    to_update = dict(doer_id=message.from_user.id, deadline=deadline, content=data.get('content'), name=data.get('name'))
-    buttons = ('menu',)
+    to_update = dict(doer_id=message.from_user.id, deadline=deadline, content=data.pop('content'), name=data.pop('name'))
     kb_data = dict(doer_id=message.from_user.id)
-    data.pop('name')
-    data.pop('content')
-    print(data)
+    msg = data.get('msg')
+    kb = get_inline_kb('MENU', **kb_data)
     await ext_api_manager.create('todo', **to_update)
-    page_for_todo = (await state.get_data()).get('pages').index(None)
+    msg = (await message.bot.edit_message_text(message_id = msg, chat_id=message.chat.id, text=phrases.created_todo, reply_markup=kb)).message_id
+    pages = data.get('pages')
+    offset = max(pages.keys())
+    if pages.get(str(offset)) is None:
+        if len(pages.get(str(offset-3))) < 3:
+            offset -= 3
+    pages.pop(str(offset))
+    data.update(msg=msg, pages=pages)
     await state.clear()
-
-    await state.update_data(text=phrases.created_todo, kb_data=kb_data, buttons=buttons)
+    await state.update_data(data)
 
 @router.message(StateFilter(FSMTodoFill.fill_deadline))
 async def process_create_task_deadline_fail(message: Message, state: FSMContext):
-    buttons = ('menu', )
-    kb_data = dict()
-    await state.update_data(buttons=buttons, kb_data=kb_data, text=phrases.fail_fill_deadline)
+    msg = (await state.get_data()).get('msg')
+    kb = get_inline_kb('MENU')
+    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
+    await state.update_data(msg=msg)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})), StateFilter(FSMTodoEdit.edit))
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,state: FSMContext):
@@ -71,35 +78,41 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
         'content': FSMTodoEdit.edit_content,
         'deadline': FSMTodoEdit.edit_date,
     }
-    msg = await callback.message.edit_text(text=f'<b>ВВЕДИТЕ НОВОЕ {data_of_edit[callback_data.act.lower()]}</b>\n\n')
-    await state.update_data(msg=msg.message_id, updating_data=callback_data.act.lower())
+    msg = (await callback.message.edit_text(text=f'<b>ВВЕДИТЕ НОВОЕ {data_of_edit[callback_data.act.lower()]}</b>\n\n')).message_id
+    await state.update_data(msg=msg, updating_data=callback_data.act.lower())
     await state.set_state(edit_states.get(callback_data.act.lower()))
 
 
 @router.message(StateFilter(FSMTodoEdit.edit_date), IsDate())
 @router.message(StateFilter(FSMTodoEdit.edit_name, FSMTodoEdit.edit_content))
 async def process_edit_todo(message: Message, state: FSMContext, ext_api_manager: MyExternalApiForBot):
-    data_from_fsm = await state.get_data()
-    current_task = data_from_fsm.get('cur_task')
+    state_data= await state.get_data()
+    current_task = state_data.get('cur_task')
     task_id = current_task.get('id')
-    updating_data_name = data_from_fsm.get('updating_data')
+    updating_data_name = state_data.get('updating_data')
     updating_data_content = to_date_dict(message.text) if updating_data_name == 'deadline' else message.text
     updating_data = {updating_data_name: updating_data_content, 'ident_val': task_id}
     await ext_api_manager.update('todo', **updating_data)
-    params = dict(limit=3, offset=0)
-    buttons = 'menu'
-    kb = get_inline_kb(buttons, **params)
+    kb_data = dict(limit=3, offset=0)
+    kb = get_inline_kb('MENU', **kb_data)
     msg = (await state.get_data()).get('msg')
-    await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.start, reply_markup=kb)
-    (await state.get_data()).pop('msg')
+    msg = (await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.start, reply_markup=kb)).message_id
+    pages = state_data.get('pages')
+    offset = max(pages.keys())
+    if pages.get(str(offset)) is None:
+        if len(pages.get(str(offset-3))) < 3:
+            offset -= 3
+    pages.pop(str(offset))
+    state_data.update(msg=msg, pages=pages)
     await state.clear()
+    await state.update_data(state_data)
 
 @router.message(StateFilter(FSMTodoEdit.edit_date))
 async def process_fail_edit_deadline(message: Message, state: FSMContext):
-    bot_message_id = (await state.get_data())['msg']
-    send_message = await message.answer(text=phrases.fail_fill_deadline)
-    await state.update_data(msg=send_message.message_id)
-    await message.bot.delete_message(chat_id = message.chat.id, message_id = bot_message_id)
+    msg = (await state.get_data()).get('msg')
+    kb = get_inline_kb('MENU')
+    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
+    await state.update_data(msg=msg)
 
 
 
