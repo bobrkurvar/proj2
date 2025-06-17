@@ -20,7 +20,7 @@ router.callback_query.middleware(InCachePageMiddleware())
 log = logging.getLogger('proj.bot.handlers.todo')
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})),
-                       StateFilter(default_state))
+                       StateFilter(default_state, FSMTodoEdit.search))
 async def process_user_todo_list_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                         state: FSMContext):
     limit = callback_data.limit
@@ -51,8 +51,10 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         except TelegramBadRequest:
             pass
 
+        if callback_data.act == 'list':
+            await state.set_state(FSMTodoEdit.search)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'edit', })), StateFilter(default_state))
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'edit', })), StateFilter(default_state, FSMTodoEdit.search))
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     res_text = None
     page = (await state.get_data()).get('pages').get(callback_data.offset)
@@ -74,7 +76,7 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
     await state.update_data(msg=msg)
     await state.set_state(FSMTodoEdit.edit)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.startswith('task')), StateFilter(default_state))
+@router.callback_query(CallbackFactoryTodo.filter(F.act.startswith('task')), StateFilter(FSMTodoEdit.edit))
 async def process_edit_selected_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                      state: FSMContext, ext_api_manager: MyExternalApiForBot):
     num = 0

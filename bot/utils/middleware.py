@@ -18,7 +18,7 @@ class InCachePageMiddleware(BaseMiddleware):
 
         state, callback_data, ext_api_manager = data.get('state'), data.get('callback_data'), data.get('ext_api_manager')
         # Эти хэндлеры не имеют доп. логики
-        if callback_data.act.lower() == 'delete' or callback_data.act.lower().startswith('task'):
+        if callback_data.act.lower() == 'delete' or callback_data.act.lower().startswith('task') or callback_data.act.lower() == 'edit':
             return await handler(event,data)
 
         pages = (await state.get_data()).get('pages')
