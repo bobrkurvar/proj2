@@ -11,7 +11,7 @@ from bot.utils.middleware import InCachePageMiddleware
 from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import phrases
-from bot.filters.states import FSMTodoEdit
+from bot.filters.states import FSMTodoEdit, FSMSearch
 import logging
 
 router = Router()
@@ -20,7 +20,7 @@ router.callback_query.middleware(InCachePageMiddleware())
 log = logging.getLogger('proj.bot.handlers.todo')
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})),
-                       StateFilter(default_state, FSMTodoEdit.search))
+                       StateFilter(default_state))
 async def process_user_todo_list_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                         state: FSMContext):
     limit = callback_data.limit
@@ -41,7 +41,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         if text == ' ':
             text = phrases.empty_todo_list
 
-        buttons = ['<<', 'EDIT', 'DELETE', '>>', 'MENU']
+        buttons = ['<<', 'EDIT', 'FILTER', 'DELETE', '>>', 'MENU']
         kb_data = dict(offset=offset, limit=limit, doer_id=callback.from_user.id, width=4)
         kb = get_inline_kb(*buttons, **kb_data)
 
@@ -51,13 +51,19 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         except TelegramBadRequest:
             pass
 
-        if callback_data.act == 'list':
-            await state.set_state(FSMTodoEdit.search)
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'filter'})), StateFilter(default_state))
+async def process_button_search(callback: CallbackQuery, state: FSMContext):
+    buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU')
+    kb = get_inline_kb(*buttons)
+    msg = (await callback.message.edit_text(text=phrases.search_criteria, reply_markup=kb)).message_id
+    await state.update_data(msg=msg)
+    await state.set_state(FSMSearch.search)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'edit', })), StateFilter(default_state, FSMTodoEdit.search))
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'edit', })), StateFilter(default_state))
 async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     res_text = None
-    page = (await state.get_data()).get('pages').get(callback_data.offset)
+    page = (await state.get_data()).get('pages').get(str(callback_data.offset))
+    print(50*'-', f'offset: {callback_data.offset}', 50*'-', sep='\n')
     buttons = []
     if page:
         cur_num = 1
@@ -85,7 +91,7 @@ async def process_edit_selected_task(callback: CallbackQuery, callback_data: Cal
         if callback_data.act[todo_in_text_num] == str(i):
             num=i-1
             break
-    cur_task = (await state.get_data()).get('pages').get(callback_data.offset)[num]
+    cur_task = (await state.get_data()).get('pages').get(str(callback_data.offset))[num]
     await state.update_data(cur_task=cur_task)
     if (await state.get_state()) == FSMTodoEdit.edit:
         buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU')

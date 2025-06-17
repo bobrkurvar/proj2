@@ -20,6 +20,8 @@ TASK_LIST_VIEW = {
 
     'empty_list': '<b>\n\nСПИСОК ЗАДАНИЙ НА ДАННЫЙ МОМЕНТ ПУСТ\n\n</b>',
 
+    'search_criteria': '<b>ВЫБЕРИТЕ КРИТЕРИЙ ПОИСКА</b>',
+
 }
 
 EDIT_TASK = {

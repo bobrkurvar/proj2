@@ -3,6 +3,7 @@ from aiogram.fsm.storage.base import StorageKey
 from aiogram.fsm.storage.redis import RedisStorage
 
 
+
 class FSMTodoFill(StatesGroup):
     fill_content = State()
     fill_name = State()
@@ -14,8 +15,12 @@ class FSMTodoEdit(StatesGroup):
     edit_name = State()
     edit_date = State()
     delete_task = State()
-    search = State()
 
+class FSMSearch(StatesGroup):
+    search = State()
+    search_by_name = State()
+    search_by_content = State()
+    search_by_deadline = State()
 
 class CustomRedisStorage(RedisStorage):
     async def set_data(self, key: StorageKey, data: dict) -> None:

@@ -15,5 +15,6 @@ class Phrases(BaseModel):
     edit_task: str  = lexicon.EDIT_TASK['edit']
     process_edit: str  = lexicon.EDIT_TASK['process_edit']
     delete_task: str  = lexicon.EDIT_TASK['delete_task']
+    search_criteria: str = lexicon.TASK_LIST_VIEW['search_criteria']
 
 phrases = Phrases()
