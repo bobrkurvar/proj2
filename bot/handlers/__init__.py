@@ -1,10 +1,10 @@
+from aiogram import Router
+from aiogram.utils.callback_answer import CallbackAnswerMiddleware
+from bot.utils.middleware import DeleteUsersMessage
+from . import command_core, todo, todo_with_state
 
-from . import command_core
-from . import todo
-from . import todo_with_state
+main_router = Router()
+main_router.include_routers(command_core.router, todo.router, todo_with_state.router)
 
-__all__ = ["core_handler", "todo_handler", "todo_with_state_handler"]
-
-core_handler= command_core.router
-todo_handler = todo.router
-todo_with_state_handler = todo_with_state.router
+main_router.callback_query.middleware(CallbackAnswerMiddleware())
+main_router.message.middleware(DeleteUsersMessage())

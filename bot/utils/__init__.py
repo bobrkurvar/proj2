@@ -1,13 +1,16 @@
+
 from .external import MyExternalApiForBot
-from aiohttp import ClientSession
+from .handlers import miss_pages_cache
 
-__all__ = ['get_session_manager']
 
-session = None
-manager = None
+ext_api_manager = MyExternalApiForBot('http://127.0.0.1:8000/')
 
-async def get_session_manager():
-    global session, manager
-    session = ClientSession()
-    manager = MyExternalApiForBot(r'http://127.0.0.1:8000/user', session)
-    return manager
+
+
+
+
+
+
+
+
+

@@ -1,5 +1,6 @@
+**/__pycache__
 .env
 .venv
-.idea
-__pycache__
-migrations
+.idea/
+migrations/**
+alembic.ini
