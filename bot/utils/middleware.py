@@ -1,9 +1,7 @@
 from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery
 from typing import Any, Callable, Awaitable
 import logging
-from bot.utils.keyboards import get_inline_kb
-from aiogram.exceptions import TelegramBadRequest
 
 log = logging.getLogger('proj2.middleware')
 
@@ -21,7 +19,8 @@ class InCachePageMiddleware(BaseMiddleware):
         limit = callback_data.limit
         offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
                    '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
-        offset: int = offsets[callback_data.act]
+        offset: int = offsets.get(callback_data.act, callback_data.offset)
+
         log.debug('offset: %s limit: %s', offset, limit)
         # Если ещё не делался запрос в базу - то значения None, а если ответ база пустой то dict()
         if pages is None:

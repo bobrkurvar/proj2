@@ -17,10 +17,10 @@ class FSMTodoEdit(StatesGroup):
     delete_task = State()
 
 class FSMSearch(StatesGroup):
-    search = State()
-    search_by_name = State()
-    search_by_content = State()
-    search_by_deadline = State()
+    filter = State()
+    filter_by_name = State()
+    filter_by_content = State()
+    filter_by_deadline = State()
 
 class CustomRedisStorage(RedisStorage):
     async def set_data(self, key: StorageKey, data: dict) -> None:
