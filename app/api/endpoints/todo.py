@@ -8,13 +8,12 @@ import logging
 
 router = APIRouter()
 
-log = logging.getLogger('proj.endpoints.todo')
+log = logging.getLogger(__name__)
 
 @router.get('/read')
 async def read_todo_list(ident: str, ident_val: int, limit: int, offset: int = 0):
     log.debug('запрос на чтение задач по %s со значением: %s', ident, ident_val)
     res = await manager.read(Todo, ident=ident, ident_val=ident_val, limit=limit, offset=offset)
-    log.info('прочитане пользователь: %s', ident_val)
     return res
 
 @router.post('/create')

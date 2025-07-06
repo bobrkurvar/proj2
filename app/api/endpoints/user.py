@@ -5,7 +5,7 @@ from db.models import User
 import logging
 
 router = APIRouter()
-log = logging.getLogger('proj.app.user')
+log = logging.getLogger(__name__)
 
 @router.post('/create')
 async def register_by_start(user: UserInputFromBot):

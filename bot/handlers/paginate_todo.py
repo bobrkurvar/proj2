@@ -4,20 +4,17 @@ from aiogram.types import CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.state import default_state
 from aiogram.exceptions import TelegramBadRequest
-
-from bot.utils import MyExternalApiForBot
 from bot.utils.middleware import InCachePageMiddleware
-
 from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import phrases
-from bot.filters.states import FSMTodoEdit, FSMSearch
+from bot.filters.states import FSMTodoEdit, FSMSearch, FSMTodoFill
 import logging
 
 router = Router()
 router.callback_query.middleware(InCachePageMiddleware())
 
-log = logging.getLogger('proj.bot.handlers.todo')
+log = logging.getLogger(__name__)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'list', '<<', '>>'})),
                        StateFilter(default_state))
@@ -30,7 +27,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
 
     offset: int = offsets[callback_data.act]
     page = (await state.get_data()).get('pages').get(str(offset))
-    log.debug('pages: %s', page)
+    log.debug('num of page: %s', offset)
 
     if not (page is None):
         text = ' '
@@ -51,8 +48,15 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         except TelegramBadRequest:
             pass
 
+@router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'create'})), StateFilter(default_state))
+async def handle_create_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
+    kb = get_inline_kb('MENU')
+    msg = (await callback.message.edit_text(text=phrases.fill_todo_name, reply_markup=kb)).message_id
+    await state.update_data(msg=msg, offset=callback_data.offset)
+    await state.set_state(FSMTodoFill.fill_name)
+
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'filter'})), StateFilter(default_state))
-async def process_button_search(callback: CallbackQuery, state: FSMContext):
+async def handle_filter_button(callback: CallbackQuery, state: FSMContext):
     buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU')
     kb = get_inline_kb(*buttons)
     msg = (await callback.message.edit_text(text=phrases.search_criteria, reply_markup=kb)).message_id
@@ -60,7 +64,7 @@ async def process_button_search(callback: CallbackQuery, state: FSMContext):
     await state.set_state(FSMSearch.filter)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'edit', })), StateFilter(default_state))
-async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
+async def handle_edit_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     res_text = None
     page = (await state.get_data()).get('pages').get(str(callback_data.offset))
     buttons = []
@@ -82,7 +86,7 @@ async def process_edit_task(callback: CallbackQuery, callback_data: CallbackFact
     await state.set_state(FSMTodoEdit.edit)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.startswith('task')), StateFilter(FSMTodoEdit.edit))
-async def process_edit_selected_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
+async def select_task_for_edit(callback: CallbackQuery, callback_data: CallbackFactoryTodo,
                                      state: FSMContext):
     num = 0
     todo_in_text_num = 4
@@ -98,7 +102,7 @@ async def process_edit_selected_task(callback: CallbackQuery, callback_data: Cal
     await state.update_data(msg=msg)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower() == 'delete'), StateFilter(default_state))
-async def process_delete_task(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
+async def handle_delete_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     res_text = None
     pages = (await state.get_data()).get('pages').get(callback_data.offset)
     buttons = []

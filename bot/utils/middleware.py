@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from typing import Any, Callable, Awaitable
 import logging
 
-log = logging.getLogger('proj2.middleware')
+log = logging.getLogger(__name__)
 
 class InCachePageMiddleware(BaseMiddleware):
     # Мидлварь для пагинцаии списка заданий.
@@ -19,22 +19,22 @@ class InCachePageMiddleware(BaseMiddleware):
         limit = callback_data.limit
         offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
                    '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
+
         offset: int = offsets.get(callback_data.act, callback_data.offset)
 
-        log.debug('offset: %s limit: %s', offset, limit)
         # Если ещё не делался запрос в базу - то значения None, а если ответ база пустой то dict()
         if pages is None:
             pages = {}
             try:
                 to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
-                log.debug('PAGES IN NONE: to_update: %s', to_update)
+                log.debug('PAGES IS NONE:')
                 pages.update({offset: to_update})
             except TypeError:
                 log.error('СПИСОК ЗАДАНИЙ ПУСТ')
         # Если словарь со страницами есть, но текущей страницы там нет
         elif str(offset) not in pages.keys():
             to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
-            log.debug('PAGES NOT HAVE OFFSET: to_update: %s', to_update)
+            log.debug('PAGES NOT HAVE OFFSET')
             if not to_update:
                 pages.update({offset: None})
             else:

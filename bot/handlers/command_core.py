@@ -8,6 +8,7 @@ from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.utils.keyboards import get_inline_kb
 from aiogram.exceptions import TelegramBadRequest
 
+
 router = Router(name="command_core")
 
 @router.message(CommandStart())

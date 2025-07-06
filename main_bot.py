@@ -11,9 +11,7 @@ import asyncio
 from bot.utils import ext_api_manager
 from redis import exceptions
 
-log = logging
-log.basicConfig(level=logging.DEBUG,
-                format='[%(asctime)s] #%(levelname)-8s %(filename)s:%(lineno)d - %(name)s - %(message)s')
+log = logging.getLogger(__name__)
 
 async def main():
     try:
