@@ -27,6 +27,7 @@ async def main():
         await ext_api_manager.connect()
         dp['ext_api_manager'] = ext_api_manager
         dp.include_router(main_router)
+        log.debug('НАЧАЛО РАБОТА БОТА')
         await dp.start_polling(bot)
     finally:
         try:
