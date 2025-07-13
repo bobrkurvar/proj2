@@ -1,5 +1,3 @@
-import logging
-
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import StateFilter
@@ -138,8 +136,10 @@ async def handle_select_param(callback: CallbackQuery, callback_data: CallbackFa
 async def process_search_by_criterion(message: Message, state: FSMContext):
     data = await state.get_data()
     filter_data_name = data.pop('filter_data')
-    filter_data = to_date_dict(message.text) if filter_data_name == 'deadline' else message.text
-
+    filter_data = message.text
+    if filter_data_name == 'deadline':
+        if filter_data.count('.') != 0:
+            filter_data = '-'.join(filter_data.split('.'))
 
     pages = data.get('pages')
     match = list()
