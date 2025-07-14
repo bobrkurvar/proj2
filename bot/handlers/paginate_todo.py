@@ -114,15 +114,15 @@ async def select_task_for_edit(callback: CallbackQuery, callback_data: CallbackF
     for j, i in enumerate(cur_page):
         if i.get('name') == callback_data.act:
             num = j
-
     cur_task = cur_page[num]
     data.update(cur_task=cur_task)
     buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU')
-    kb = get_inline_kb(*buttons, width=3)
+    kb = get_inline_kb(*buttons, width=3, offset=callback_data.offset)
     text = phrases.process_edit if (await state.get_state()) == FSMTodoEdit.edit else phrases.delete_task.format(cur_page.get('name'))
     msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
     data.update(msg=msg)
     if await state.get_state() == FSMTodoEdit.delete_task:
+        log.debug('Удаление задания с id: %s', cur_task.get('id'))
         data.pop('cur_task')
         await ext_api_manager.remove(prefix='todo', todo_id=cur_task.get('id'))
         offset = callback_data.offset
@@ -132,6 +132,9 @@ async def select_task_for_edit(callback: CallbackQuery, callback_data: CallbackF
         pages.pop(str(offset))
         data.update(pages=pages)
         await state.clear()
+    else:
+        log.debug('Изменение задания с id: %s', cur_task.get('id'))
+
     await state.update_data(data)
 
 

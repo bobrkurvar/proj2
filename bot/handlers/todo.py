@@ -74,26 +74,24 @@ async def handle_param_button(callback: CallbackQuery, callback_data: CallbackFa
         'deadline': FSMTodoEdit.edit_date,
     }
     msg = (await callback.message.edit_text(text=f'<b>ВВЕДИТЕ НОВОЕ {data_of_edit[callback_data.act.lower()]}</b>\n\n')).message_id
-    await state.update_data(msg=msg, updating_data=callback_data.act.lower())
+    await state.update_data(msg=msg, updating_data=callback_data.act.lower(), offset=callback_data.offset)
     await state.set_state(edit_states.get(callback_data.act.lower()))
 
 @router.message(StateFilter(FSMTodoEdit.edit_date), IsDate())
 @router.message(StateFilter(FSMTodoEdit.edit_name, FSMTodoEdit.edit_content))
 async def process_edit_todo(message: Message, state: FSMContext, ext_api_manager: MyExternalApiForBot):
     state_data= await state.get_data()
+    offset = state_data.pop('offset')
+    log.debug('смещение изменяемого задания: %s', offset)
     current_task = state_data.pop('cur_task')
     task_id = current_task.get('id')
     updating_data_name = state_data.pop('updating_data')
     updating_data_content = to_date_dict(message.text) if updating_data_name == 'deadline' else message.text
     updating_data = {updating_data_name: updating_data_content, 'ident_val': task_id}
     await ext_api_manager.update('todo', **updating_data)
-    kb_data = dict(limit=3, offset=0)
+    kb_data = dict(limit=3, offset=offset)
     kb = get_inline_kb('MENU', **kb_data)
     pages = state_data.get('pages')
-    offset = max(pages.keys())
-    if pages.get(str(offset)) is None:
-        if len(pages.get(str(int(offset)-3))) < 3:
-            offset = str(int(offset) - 3)
     pages.pop(str(offset))
     msg = (await state.get_data()).get('msg')
     msg = (await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.start, reply_markup=kb)).message_id
