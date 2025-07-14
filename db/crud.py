@@ -1,11 +1,11 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.exceptions import CustomDbException
 from functools import wraps
 import logging
 
-log = logging.getLogger('proj.db')
+log = logging.getLogger(__name__)
 
 def handle_db_operation(func):
     @wraps(func)
@@ -33,10 +33,14 @@ class Crud:
             return tup.id
 
     @handle_db_operation
-    async def delete(self, model, ident):
+    async def delete(self, model, ident = None):
         async with self._session.begin() as session:
-            for_remove = await session.get(model, ident)
-            await session.delete(for_remove)
+            if ident:
+                for_remove = await session.get(model, ident)
+                await session.delete(for_remove)
+            else:
+                await session.execute(delete(model))
+
 
     @handle_db_operation
     async def update(self, model, ident: str, ident_val: int, **kwargs):
@@ -45,15 +49,17 @@ class Crud:
             await session.execute(query)
 
     @handle_db_operation
-    async def read(self, model, ident: str | None = None, ident_val: int | None = None, limit: int | None = None, offset: int | None = None):
+    async def read(self, model, ident: str | None = None, ident_val: int | None = None, limit: int | None = None, offset: int | None = None, order_by: str | None = None):
         async with self._session.begin() as session:
             query = select(model)
             if ident:
                 query = query.where(getattr(model, ident) == ident_val)
-            if limit:
-                query = query.limit(limit)
+            if order_by:
+                query = query.order_by(getattr(model, order_by))
             if offset:
                 query = query.offset(offset)
+            if limit:
+                query = query.limit(limit)
             res = (await session.execute(query)).scalars()
             return [r.to_dict() for r in res]
 

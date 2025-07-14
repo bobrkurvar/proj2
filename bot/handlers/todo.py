@@ -1,7 +1,6 @@
 from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import StateFilter
-from aiogram.exceptions import TelegramBadRequest
 from bot.filters.callback_factory import CallbackFactoryTodo
 from aiogram.fsm.context import FSMContext
 from bot.utils.keyboards import get_inline_kb
@@ -110,59 +109,16 @@ async def process_fail_edit_deadline(message: Message, state: FSMContext):
     await state.update_data(msg=msg)
 
 @router.callback_query(StateFilter(FSMSearch.filter), CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})))
-async def handle_select_param(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
-    data_of_edit = {
-        'name': 'ИМЯ',
-        'content': 'СОДЕРЖАНИЕ',
-        'deadline': 'ВРЕМЯ ВЫПОЛНЕНИЯ',
-    }
-    edit_states = {
-        'name': FSMSearch.filter_by_name,
-        'content': FSMSearch.filter_by_content,
-        'deadline': FSMSearch.filter_by_deadline,
-    }
-    msg = (await callback.message.edit_text(text=f'<b>ВВЕДИТЕ {data_of_edit[callback_data.act.lower()]} для поиска</b>\n\n')).message_id
-    await state.update_data(msg=msg, filter_data=callback_data.act.lower())
-    await state.set_state(edit_states.get(callback_data.act.lower()))
-
-@router.message(StateFilter(FSMSearch.filter_by_deadline), IsDate())
-@router.message(StateFilter(FSMSearch.filter_by_name, FSMSearch.filter_by_content))
-async def process_search_by_criterion(message: Message, state: FSMContext):
+async def handle_select_param(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext, ext_api_manager: MyExternalApiForBot):
+    lst = await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=callback.from_user.id, order_by=callback_data.act.lower())
     data = await state.get_data()
-    filter_data_name = data.pop('filter_data')
-    filter_data = message.text
-    if filter_data_name == 'deadline':
-        if filter_data.count('.') != 0:
-            filter_data = '-'.join(filter_data.split('.'))
-
-    pages = data.get('pages')
-    match = list()
-    if pages:
-        for i in pages:
-            log.debug('key of pages %s' % i)
-            if not (pages.get(i) is None):
-                for j in pages.get(i):
-                    if j.get(filter_data_name) == filter_data:
-                        match.append(j)
-
-    if match:
+    if lst:
         text = ' '
-        for i in match:
+        for i in lst:
             text += phrases.list_todo_view.format(i.get('name'), i.get('content'), i.get('deadline'))
-
-        if text == ' ':
-            text = phrases.empty_todo_list
-
-        kb_data = dict(width = 1)
-        kb = get_inline_kb('MENU', **kb_data)
-
-        msg = data.get('msg')
-        try:
-            msg = (await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=text, reply_markup=kb)).message_id
-            await state.update_data(msg=msg)
-        except TelegramBadRequest:
-            pass
-
+        kb = get_inline_kb('menu')
+        msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
+        data.update(msg=msg)
     await state.clear()
     await state.update_data(data)
 

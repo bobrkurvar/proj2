@@ -19,9 +19,6 @@ class FSMTodoEdit(StatesGroup):
 
 class FSMSearch(StatesGroup):
     filter = State()
-    filter_by_name = State()
-    filter_by_content = State()
-    filter_by_deadline = State()
 
 class CustomRedisStorage(RedisStorage):
     async def set_data(self, key: StorageKey, data: dict) -> None:

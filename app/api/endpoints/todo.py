@@ -11,8 +11,8 @@ router = APIRouter()
 log = logging.getLogger(__name__)
 
 @router.get('/read')
-async def read_todo_list(ident: str, ident_val: int, limit: int = 1, offset: int = 0):
-    log.debug('запрос на чтение задач по %s со значением: %s', ident, ident_val)
+async def read_todo_list(ident: str, ident_val: int, limit: int | None = None, offset: int | None = None):
+    log.debug('запрос на чтение задач по %s со значением: %s limit: %s, offset: %s', ident, ident_val, limit, offset)
     res = await manager.read(Todo, ident=ident, ident_val=ident_val, limit=limit, offset=offset)
     return res
 
@@ -52,6 +52,10 @@ async def update_task(todo: TodoUpdate):
 
 
 @router.delete('/delete')
-async def delete_task(todo_id: int):
-    await manager.delete(Todo, ident = {'id': todo_id})
-    log.info('задание %s удалено', todo_id)
+async def delete_task(todo_id: int | None = None):
+    if todo_id:
+        await manager.delete(Todo, ident = {'id': todo_id})
+        log.info('задание %s удалено', todo_id)
+    else:
+        await manager.delete(Todo)
+        log.info('все задания пользователя удалены')

@@ -8,7 +8,7 @@ from bot.utils.middleware import InCachePageMiddleware
 from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import phrases
-from bot.filters.states import FSMTodoEdit, FSMSearch, FSMTodoFill
+from bot.filters.states import FSMTodoEdit, FSMTodoFill, FSMSearch
 from bot.utils import MyExternalApiForBot
 import logging
 
@@ -29,25 +29,24 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
     offset: int = offsets[callback_data.act]
     page = (await state.get_data()).get('pages').get(str(offset))
     log.debug('num of page: %s', offset)
-
-    if not (page is None):
-        text = ' '
-
+    text = ' '
+    if page:
         for i in page:
             text += phrases.list_todo_view.format(i.get('name'), i.get('content'), i.get('deadline'))
 
-        if text == ' ':
-            text = phrases.empty_todo_list
+    if text == ' ':
+        text = phrases.empty_todo_list
 
-        buttons = ['<<', 'EDIT', 'FILTER', 'DELETE', '>>', 'MENU']
-        kb_data = dict(offset=offset, limit=limit, doer_id=callback.from_user.id, width=len(buttons)-1)
-        kb = get_inline_kb(*buttons, **kb_data)
-
-        try:
+    try:
+        if not (page is None):
+            buttons = ['<<', 'EDIT', 'FILTER', 'DELETE', '>>', 'MENU'] if page else ('MENU',)
+            kb_data = dict(offset=offset, limit=limit, doer_id=callback.from_user.id,
+                           width=len(buttons) - 1 if len(buttons) > 1 else 1)
+            kb = get_inline_kb(*buttons, **kb_data)
             msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
             await state.update_data(msg=msg)
-        except TelegramBadRequest:
-            pass
+    except TelegramBadRequest:
+        pass
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'create'})), StateFilter(default_state))
 async def handle_create_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
@@ -96,6 +95,7 @@ async def handle_delete_button(callback: CallbackQuery, callback_data: CallbackF
             buttons.append(i.get('name'))
     else:
         res_text = 'список заданий пуст'
+    buttons.append('all')
     buttons.append('MENU')
     params = {'limit': callback_data.limit, 'id': callback_data.id, 'offset': callback_data.offset}
     kb = get_inline_kb(*buttons, **params)
@@ -119,21 +119,25 @@ async def select_task_for_edit(callback: CallbackQuery, callback_data: CallbackF
     buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU') if (await state.get_state()) == FSMTodoEdit.edit_task else ('MENU',)
     kb = get_inline_kb(*buttons, width=3, offset=callback_data.offset)
     text = phrases.process_edit if (await state.get_state()) == FSMTodoEdit.edit_task else phrases.delete_task
-    msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
-    data.update(msg=msg)
     if await state.get_state() == FSMTodoEdit.delete_task:
-        log.debug('Удаление задания с id: %s', cur_task.get('id'))
         data.pop('cur_task')
-        await ext_api_manager.remove(prefix='todo', todo_id=cur_task.get('id'))
-        offset = callback_data.offset
-        pages.pop(str(offset))
-        data.update(pages=pages)
+        if callback_data.act.lower() == 'all':
+            log.debug('Удаление всех заданий пользоваетля с id: %s', cur_task.get('doer_id'))
+            await ext_api_manager.remove(prefix='todo')
+            data.pop('pages')
+        else:
+            log.debug('Удаление задания с id: %s', cur_task.get('id'))
+            await ext_api_manager.remove(prefix='todo', todo_id=cur_task.get('id'))
+            offset = callback_data.offset
+            pages.pop(str(offset))
+            data.update(pages=pages)
         await state.clear()
     else:
         log.debug('Изменение задания с id: %s', cur_task.get('id'))
-
+        await state.set_state(FSMTodoEdit.select_crit)
+    msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
+    data.update(msg=msg)
     await state.update_data(data)
-    await state.set_state(FSMTodoEdit.select_crit)
 
 
 
