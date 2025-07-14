@@ -10,7 +10,8 @@ class FSMTodoFill(StatesGroup):
     fill_deadline = State()
 
 class FSMTodoEdit(StatesGroup):
-    edit = State()
+    edit_task = State()
+    select_crit = State()
     edit_content = State()
     edit_name = State()
     edit_date = State()

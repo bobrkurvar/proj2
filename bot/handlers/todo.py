@@ -48,7 +48,7 @@ async def process_fill_task_deadline_success(message: Message, state: FSMContext
     offset = max(pages.keys())
     if pages.get(str(offset)) is None:
         if len(pages.get(str(int(offset)-3))) < 3:
-            offset -= 3
+            offset = str(int(offset) - 3)
     pages.pop(str(offset))
     data.update(msg=msg, pages=pages)
     await state.clear()
@@ -58,11 +58,14 @@ async def process_fill_task_deadline_success(message: Message, state: FSMContext
 async def process_fill_task_deadline_fail(message: Message, state: FSMContext):
     msg = (await state.get_data()).get('msg')
     kb = get_inline_kb('MENU')
-    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
+    try:
+        msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
+    except:
+        pass
     await state.update_data(msg=msg)
 
-@router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})), StateFilter(FSMTodoEdit.edit))
-async def handle_param_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo,state: FSMContext):
+@router.callback_query(CallbackFactoryTodo.filter(), StateFilter(FSMTodoEdit.select_crit))
+async def handle_param_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     data_of_edit = {
         'name': 'ИМЯ',
         'content': 'СОДЕРЖАНИЕ',
