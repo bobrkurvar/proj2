@@ -24,17 +24,16 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
     limit = callback_data.limit
 
     offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
-               '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
+               '<<': callback_data.offset - limit if callback_data.offset > limit else 0}
 
-    offset: int = offsets[callback_data.act]
+    offset = offsets[callback_data.act]
     page = (await state.get_data()).get('pages').get(str(offset))
-    log.debug('num of page: %s', offset)
+    log.debug('номер страницы в данный момент: %s', offset)
     text = ' '
     if page:
         for i in page:
             text += phrases.list_todo_view.format(i.get('name'), i.get('content'), i.get('deadline'))
-
-    if text == ' ':
+    else:
         text = phrases.empty_todo_list
 
     try:
@@ -52,7 +51,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
 async def handle_create_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     kb = get_inline_kb('MENU')
     msg = (await callback.message.edit_text(text=phrases.fill_todo_name, reply_markup=kb)).message_id
-    await state.update_data(msg=msg, offset=callback_data.offset)
+    await state.update_data(msg=msg)
     await state.set_state(FSMTodoFill.fill_name)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'filter'})), StateFilter(default_state))

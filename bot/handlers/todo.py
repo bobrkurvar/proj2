@@ -43,13 +43,8 @@ async def process_fill_task_deadline_success(message: Message, state: FSMContext
     kb = get_inline_kb('MENU', **kb_data)
     await ext_api_manager.create('todo', **to_update)
     msg = (await message.bot.edit_message_text(message_id = msg, chat_id=message.chat.id, text=phrases.created_todo, reply_markup=kb)).message_id
-    pages = data.get('pages')
-    offset = max(pages.keys())
-    if pages.get(str(offset)) is None:
-        if len(pages.get(str(int(offset)-3))) < 3:
-            offset = str(int(offset) - 3)
-    pages.pop(str(offset))
-    data.update(msg=msg, pages=pages)
+    data.pop('pages')
+    data.update(msg=msg)
     await state.clear()
     await state.update_data(data)
 

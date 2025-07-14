@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, update, delete, asc
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.exceptions import CustomDbException
 from functools import wraps
@@ -49,12 +49,15 @@ class Crud:
             await session.execute(query)
 
     @handle_db_operation
-    async def read(self, model, ident: str | None = None, ident_val: int | None = None, limit: int | None = None, offset: int | None = None, order_by: str | None = None):
+    async def read(self, model, ident: str | None = None, ident_val: int | None = None, limit: int | None = None, offset: int | None = None,
+                   order_by: str | None = None):
         async with self._session.begin() as session:
             query = select(model)
+            log.debug
             if ident:
                 query = query.where(getattr(model, ident) == ident_val)
             if order_by:
+                log.debug('сортировка по %s', order_by)
                 query = query.order_by(getattr(model, order_by))
             if offset:
                 query = query.offset(offset)

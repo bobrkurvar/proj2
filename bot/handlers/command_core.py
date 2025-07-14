@@ -34,7 +34,6 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
 @router.message(Command(commands=['help']))
 async def process_delete_unknown(message: Message, state: FSMContext):
     buttons = ('START',)
-    await state.update_data(text=phrases.help, kb_data={}, buttons=buttons)
     data = await state.get_data()
     msg = data.get('msg')
     kb_data = dict(doer_id=message.from_user.id, limit=3, offset=0)
@@ -55,20 +54,18 @@ async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_a
             'last_name': callback.from_user.last_name}
     await ext_api_manager.create(prefix='user', **user)
     buttons = ('list', 'create')
-    kb_data = dict(doer_id=callback.from_user.id, limit=3)
+    kb_data = dict(doer_id=callback.from_user.id, limit=3, offset=0)
     kb = get_inline_kb(*buttons, **kb_data)
-    if phrases.start != callback.message.text:
-        msg = (await callback.message.edit_text(text=phrases.start, reply_markup=kb)).message_id
-        await state.update_data(msg=msg)
+    msg = (await callback.message.edit_text(text=phrases.start, reply_markup=kb)).message_id
+    await state.update_data(msg=msg)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='menu'))
-async def process_press_button_menu(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
+async def process_press_button_menu(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     buttons = ('list', 'create')
-    kb_data = dict(limit=3, doer_id=callback.from_user.id)
+    kb_data = dict(limit=3, offset=0)
     kb = get_inline_kb(*buttons, **kb_data)
-    if phrases.start != callback.message.text:
-        msg = (await callback.message.edit_text(text=phrases.start, reply_markup=kb)).message_id
-        data.update(msg=msg)
+    msg = (await callback.message.edit_text(text=phrases.start, reply_markup=kb)).message_id
+    data.update(msg=msg)
     await state.clear()
     await state.update_data(data)

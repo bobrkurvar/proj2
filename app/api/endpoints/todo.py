@@ -11,9 +11,9 @@ router = APIRouter()
 log = logging.getLogger(__name__)
 
 @router.get('/read')
-async def read_todo_list(ident: str, ident_val: int, limit: int | None = None, offset: int | None = None):
+async def read_todo_list(ident: str, ident_val: int, limit: int | None = None, offset: int | None = None, order_by: str | None = None):
     log.debug('запрос на чтение задач по %s со значением: %s limit: %s, offset: %s', ident, ident_val, limit, offset)
-    res = await manager.read(Todo, ident=ident, ident_val=ident_val, limit=limit, offset=offset)
+    res = await manager.read(Todo, ident=ident, ident_val=ident_val, limit=limit, offset=offset, order_by = order_by)
     return res
 
 @router.post('/create')
