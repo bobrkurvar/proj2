@@ -2,9 +2,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY req.txt .
+COPY ./app_req.txt .
 
-RUN pip install --no-cache-dir -r req.txt
+RUN pip install --no-cache-dir -r app_req.txt
 
 COPY . .
 

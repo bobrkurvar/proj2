@@ -11,7 +11,7 @@ import asyncio
 from bot.utils import ext_api_manager
 from redis import exceptions
 
-bot = Bot(conf.BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
+bot = Bot(conf.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 log = logging.getLogger(__name__)
 
 async def main():
