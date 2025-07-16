@@ -53,7 +53,6 @@ class Crud:
                    order_by: str | None = None):
         async with self._session.begin() as session:
             query = select(model)
-            log.debug
             if ident:
                 query = query.where(getattr(model, ident) == ident_val)
             if order_by:

@@ -6,6 +6,6 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     BOT_TOKEN: str
 
-def load_config(path: Path) -> Settings:
-   conf = Settings(_env_file=path)
+def load_config(path: Path | None = None) -> Settings:
+   conf = Settings(_env_file=path) if path else Settings()
    return conf
