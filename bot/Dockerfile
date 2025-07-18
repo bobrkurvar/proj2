@@ -1,11 +1,13 @@
 FROM python:3.11-slim
 
-WORKDIR /bot
+WORKDIR /proj2
 
 COPY ./req.txt .
 
-RUN pip install --no-cache-dir -r bot_req.txt
+RUN pip install --no-cache-dir -r req.txt
 
-COPY ./bot /bot
+COPY ./main_bot.py /proj2/
+COPY ./bot /proj2/bot
+COPY ./core /proj2/core
 
-CMD ["py", "-m", "main_bot"]
+CMD ["python", "main_bot.py"]

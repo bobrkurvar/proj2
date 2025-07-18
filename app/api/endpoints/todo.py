@@ -3,7 +3,6 @@ from db import manager
 from db.models import Todo
 from app.api.schemas.todo import TodoInput, TodoUpdate
 from datetime import date
-from typing import Any
 import logging
 
 router = APIRouter(tags=['Todo'])
@@ -18,8 +17,8 @@ async def read_todo_list(ident: str, ident_val: int, limit: int | None = None, o
 
 @router.post('',status_code=status.HTTP_201_CREATED, summary='создание задачи')
 async def create_task(todo: TodoInput):
-    todo: dict[str, Any] = todo.model_dump()
-    todo.update(deadline=date(**todo['deadline']))
+    todo = todo.model_dump()
+    todo.update(deadline=date(**todo.get('deadline')))
     log.debug('запрос на создание задания')
     todo_id = await manager.create(Todo, **todo)
     log.info("задание %s добавлено", todo_id)

@@ -3,7 +3,7 @@ from aiohttp.client_exceptions import ClientConnectorError
 import logging
 from functools import wraps
 
-log = logging.getLogger('proj.bot.utils')
+log = logging.getLogger(__name__)
 
 def handle_ext_api(func):
     @wraps(func)

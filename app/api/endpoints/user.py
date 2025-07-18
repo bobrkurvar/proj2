@@ -24,7 +24,7 @@ async def read_user(ident: str | None = None, ident_val: int | str | None = None
         return await manager.read(model=User, ident=ident, ident_val=ident_val)
 
 
-@router.get('', summary='удаление пользователя',status_code=status.HTTP_200_OK)
+@router.get('', summary='чтение пользователя',status_code=status.HTTP_200_OK)
 async def delete_from_bot(user_id:int):
     log.debug('запрос на удаление пользователя: %s', user_id)
     await manager.delete(User, user_id)

@@ -1,4 +1,4 @@
-from core import conf, logger
+from core import conf
 import logging
 from aiogram.client.default import DefaultBotProperties
 from aiogram import Bot, Dispatcher
@@ -17,7 +17,8 @@ log = logging.getLogger(__name__)
 async def main():
     try:
         try:
-            redis = Redis(host='localhost')
+            host = conf.redis_host
+            redis = Redis(host=host)
             await redis.ping()
             storage = CustomRedisStorage(redis=redis, state_ttl=3600)
         except exceptions.ConnectionError:
