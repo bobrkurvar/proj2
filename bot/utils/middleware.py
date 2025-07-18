@@ -36,7 +36,10 @@ class InCachePageMiddleware(BaseMiddleware):
             log.debug('страницы со смещением %s нет в кэше', offset)
             to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
             if not to_update:
-                pages.update({offset: None})
+                if offset == '0':
+                    pages.update({offset: list()})
+                else:
+                    pages.update({offset: None})
             else:
                 pages.update({offset: to_update})
         await state.update_data(pages=pages)

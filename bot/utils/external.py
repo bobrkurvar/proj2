@@ -25,12 +25,20 @@ class MyExternalApiForBot:
         return res
 
     @handle_ext_api
-    async def remove(self, prefix: str, **args):
-        await self._session.delete(self._url + prefix, params=args)
+    async def remove(self, prefix: str, **kwargs):
+        id_ = kwargs.get('ident')
+        if (not (id_ is None)) and (len(kwargs) == 1):
+            await self._session.delete(self._url + prefix + f'/{id_}')
+        else:
+            await self._session.delete(self._url + prefix, params=kwargs)
 
     @handle_ext_api
     async def read(self, prefix: str, **kwargs):
-        res = await self._session.get(self._url + prefix, params=kwargs)
+        id_ = kwargs.get('ident')
+        if (not (id_ is None)) and (len(kwargs) == 1):
+            res = await self._session.get(self._url + prefix + f'/{id_}')
+        else:
+            res = await self._session.get(self._url + prefix, params=kwargs)
         res = await res.json()
         return res
 

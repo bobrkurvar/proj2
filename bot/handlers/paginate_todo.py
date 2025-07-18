@@ -48,7 +48,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
         pass
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.in_({'create'})), StateFilter(default_state))
-async def handle_create_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
+async def handle_create_button(callback: CallbackQuery, state: FSMContext):
     kb = get_inline_kb('MENU')
     msg = (await callback.message.edit_text(text=phrases.fill_todo_name, reply_markup=kb)).message_id
     await state.update_data(msg=msg)
@@ -129,7 +129,7 @@ async def select_task_for_edit(callback: CallbackQuery, callback_data: CallbackF
             data.pop('pages')
         else:
             log.debug('Удаление задания с id: %s', cur_task.get('id'))
-            await ext_api_manager.remove(prefix='todo', todo_id=cur_task.get('id'))
+            await ext_api_manager.remove(prefix='todo', ident=cur_task.get('id'))
             offset = callback_data.offset
             pages.pop(str(offset))
             data.update(pages=pages)
