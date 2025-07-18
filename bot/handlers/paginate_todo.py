@@ -65,16 +65,19 @@ async def handle_filter_button(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower().in_({'edit'})), StateFilter(default_state))
 async def handle_edit_button(callback: CallbackQuery, callback_data: CallbackFactoryTodo, state: FSMContext):
     res_text = None
+    todo_id = callback_data.id
     page = (await state.get_data()).get('pages').get(str(callback_data.offset))
     buttons = []
     if page:
         buttons = []
         for i in page:
             buttons.append(i.get('name'))
+        todo_id = [i.get('id') for i in page]
     else:
         res_text = 'список заданий пуст'
     buttons.append('MENU')
-    kb_data = dict(limit=callback_data.limit, id=callback_data.id, offset=callback_data.offset)
+
+    kb_data = dict(limit=callback_data.limit, id=todo_id, offset=callback_data.offset)
     kb = get_inline_kb(*buttons, **kb_data)
     if not res_text:
         res_text = 'выберете какое задание изменить: '
@@ -108,10 +111,10 @@ async def select_task_for_edit(callback: CallbackQuery, callback_data: CallbackF
                                      state: FSMContext, ext_api_manager: MyExternalApiForBot):
     data = await state.get_data()
     pages = data.get('pages')
-    num = 0
     cur_page = pages.get(str(callback_data.offset))
+    num = 0
     for j, i in enumerate(cur_page):
-        if i.get('name') == callback_data.act:
+        if i.get('id') == callback_data.id:
             num = j
     cur_task = cur_page[num]
     data.update(cur_task=cur_task)
