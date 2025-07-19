@@ -32,7 +32,8 @@ async def read_todo_list(ident: str, ident_val: int,
 @router.post('',status_code=status.HTTP_201_CREATED, summary='создание задачи')
 async def create_task(todo: TodoInput, manager: DbManagerDep):
     todo = todo.model_dump()
-    todo.update(deadline=date(**todo.get('deadline')))
+    if isinstance(todo.get('deadline'), dict):
+        todo.update(deadline=date(**todo.get('deadline')))
     log.debug('запрос на создание задания')
     try:
         todo_id = await manager.create(Todo, **todo)
@@ -50,7 +51,6 @@ async def create_task(todo: TodoInput, manager: DbManagerDep):
 async def update_task(todo: TodoUpdate, manager: DbManagerDep):
     todo_data = todo.model_dump()
     for_update = []
-    del todo_data['is_delete']
     if not todo_data['name']:
         del todo_data['name']
     else:

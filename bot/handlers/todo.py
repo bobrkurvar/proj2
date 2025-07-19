@@ -7,7 +7,7 @@ from bot.utils.keyboards import get_inline_kb
 from bot.lexicon import phrases
 from bot.filters.states import FSMTodoFill, FSMTodoEdit, FSMSearch
 from bot.utils import MyExternalApiForBot
-from bot.utils.handlers import to_date_dict
+from bot.utils.handlers import to_date_dict, to_date
 from bot.filters.custom_filters import IsDate
 import logging
 
