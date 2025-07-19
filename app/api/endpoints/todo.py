@@ -36,8 +36,14 @@ async def create_task(todo: TodoInput, manager: DbManagerDep):
     log.debug('запрос на создание задания')
     try:
         todo_id = await manager.create(Todo, **todo)
-    except IntegrityError:
-        raise CustomDbException(message='задача с таким id уже существует', detail='задача с таким id уже существует', status_code=status.HTTP_200_OK)
+    except IntegrityError as err:
+        msg_err = str(err.orig)
+        if "foreign key constraint" in msg_err:
+            raise CustomDbException(message='ошибка целостности бд', detail='пользователя с таким doer_id не существует',
+                                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        else:
+            raise CustomDbException(message='ошибка целостности бд', detail='задача с таким id уже существует',
+                                    status_code=status.HTTP_200_OK)
     return todo_id
 
 @router.patch('', summary='обновление данных задачи', status_code=status.HTTP_200_OK)
