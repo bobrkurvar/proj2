@@ -3,7 +3,7 @@ from aiohttp.client_exceptions import ClientConnectorError
 import logging
 from functools import wraps
 
-log = logging.getLogger('proj.bot.utils')
+log = logging.getLogger(__name__)
 
 def handle_ext_api(func):
     @wraps(func)
@@ -21,22 +21,30 @@ class MyExternalApiForBot:
 
     @handle_ext_api
     async def create(self, prefix: str, **data):
-        res = await self._session.post(self._url+ prefix + '/create', json = data)
+        res = await self._session.post(self._url+ prefix, json = data)
         return res
 
     @handle_ext_api
-    async def remove(self, prefix: str, **args):
-        await self._session.delete(self._url + prefix + '/delete', params=args)
+    async def remove(self, prefix: str, **kwargs):
+        id_ = kwargs.get('ident')
+        if (not (id_ is None)) and (len(kwargs) == 1):
+            await self._session.delete(self._url + prefix + f'/{id_}')
+        else:
+            await self._session.delete(self._url + prefix, params=kwargs)
 
     @handle_ext_api
     async def read(self, prefix: str, **kwargs):
-        res = await self._session.get(self._url + prefix + '/read', params=kwargs)
+        id_ = kwargs.get('ident')
+        if (not (id_ is None)) and (len(kwargs) == 1):
+            res = await self._session.get(self._url + prefix + f'/{id_}')
+        else:
+            res = await self._session.get(self._url + prefix, params=kwargs)
         res = await res.json()
         return res
 
     @handle_ext_api
     async def update(self, prefix: str, **kwargs):
-        await self._session.patch(self._url + prefix + '/update', json=kwargs)
+        await self._session.patch(self._url + prefix, json=kwargs)
 
     async def connect(self):
         if not self._session:

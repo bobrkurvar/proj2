@@ -1,15 +1,13 @@
 from aiogram import BaseMiddleware
-from aiogram.types import TelegramObject, Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery
 from typing import Any, Callable, Awaitable
 import logging
-from bot.utils.keyboards import get_inline_kb
-from aiogram.exceptions import TelegramBadRequest
 
-log = logging.getLogger('proj2.middleware')
+log = logging.getLogger(__name__)
 
 class InCachePageMiddleware(BaseMiddleware):
     # Мидлварь для пагинцаии списка заданий.
-    # До попадание в хандлер создаёт в хранилище значения страниц по ключам смещения в базе данных.
+    # До попадания в хандлер добавляет в хранилище словарь pages вида offset смещение в базе данных: список словарей(кортеж базы данных)
 
     async def __call__(self,
                        handler: Callable[[CallbackQuery, dict[str, Any]], Awaitable[Any]],
@@ -21,23 +19,27 @@ class InCachePageMiddleware(BaseMiddleware):
         limit = callback_data.limit
         offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
                    '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
-        offset: int = offsets[callback_data.act]
-        log.debug('offset: %s limit: %s', offset, limit)
-        # Если ещё не делался запрос в базу - то значения None, а если ответ база пустой то dict()
+
+        offset = offsets.get(callback_data.act, callback_data.offset)
+
+        # Если ещё не делался запрос в базу - то значение pages None
+        # Если запрос делался, но вернул пустой ответ - то pages инициализируется пустым словарём
         if pages is None:
+            log.debug('в кэше нет страниц(pages None)')
             pages = {}
-            try:
-                to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
-                log.debug('PAGES IN NONE: to_update: %s', to_update)
-                pages.update({offset: to_update})
-            except TypeError:
-                log.error('СПИСОК ЗАДАНИЙ ПУСТ')
+            to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
+            pages.update({offset: to_update})
+            if not to_update:
+                log.error('список заданий пуст')
         # Если словарь со страницами есть, но текущей страницы там нет
         elif str(offset) not in pages.keys():
+            log.debug('страницы со смещением %s нет в кэше', offset)
             to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
-            log.debug('PAGES NOT HAVE OFFSET: to_update: %s', to_update)
             if not to_update:
-                pages.update({offset: None})
+                if offset == '0':
+                    pages.update({offset: list()})
+                else:
+                    pages.update({offset: None})
             else:
                 pages.update({offset: to_update})
         await state.update_data(pages=pages)

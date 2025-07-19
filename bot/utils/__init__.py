@@ -1,9 +1,8 @@
-
 from .external import MyExternalApiForBot
-from .handlers import miss_pages_cache
+from core import conf
 
-
-ext_api_manager = MyExternalApiForBot('http://127.0.0.1:8000/')
+host = conf.api_host
+ext_api_manager = MyExternalApiForBot(f'http://{host}:8000/')
 
 
 

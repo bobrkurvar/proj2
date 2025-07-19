@@ -33,7 +33,7 @@ EDIT_TASK = {
 
     'edit_content': '<b>ВВЕДИТЕ НОВОЕ ТЕЛО ЗАДАНИЯ\n\n</b>',
 
-    'delete_task': '<b>ЗАДАНИЕ {} УДАЛЕНО\n\n</b>',
+    'delete_task': '<b>ЗАДАНИЕ УДАЛЕНО\n\n</b>',
 }
 
 
