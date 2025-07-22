@@ -13,7 +13,6 @@ from redis import exceptions
 
 bot = Bot(conf.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 log = logging.getLogger(__name__)
-dp = Dispatcher()
 
 async def main():
     try:
@@ -25,8 +24,7 @@ async def main():
         except exceptions.ConnectionError:
             log.error('не удалось поключиться к redis, использую MemoryStorage')
             storage = MemoryStorage()
-        #dp = Dispatcher(storage=storage)
-        dp.storage=storage
+        dp = Dispatcher(storage=storage)
         await ext_api_manager.connect()
         dp['ext_api_manager'] = ext_api_manager
         dp.include_router(main_router)
