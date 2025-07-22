@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: ./app/Dockerfile
+      target: app
     environment:
       DB_HOST: postgres
       DB_PORT: ${DB_PORT}
@@ -19,11 +19,12 @@ services:
   bot:
     build:
       context: .
-      dockerfile: ./bot/Dockerfile
+      target: bot
     env_file: .env
     environment:
       REDIS_HOST: redis
       API_HOST: app
+      BOT_TOKEN: ${BOT_TOKEN}
     depends_on:
       - postgres
       - redis
@@ -48,6 +49,20 @@ services:
     restart: always
     ports:
       - "6379:6379"
+
+  celery:
+    build:
+      context: .
+      target: celery
+    env_file: .env
+    environment:
+      REDIS_HOST: redis
+      API_HOST: app
+      BOT_TOKEN: ${BOT_TOKEN}
+    depends_on:
+      - bot
+      - postgres
+      - redis
 
 volumes:
   pgdata:

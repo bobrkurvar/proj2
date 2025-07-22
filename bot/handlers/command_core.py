@@ -69,3 +69,7 @@ async def process_press_button_menu(callback: CallbackQuery, state: FSMContext):
     data.update(msg=msg)
     await state.clear()
     await state.update_data(data)
+
+@router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='close'))
+async def process_press_button_close(callback: CallbackQuery):
+    await callback.message.delete()

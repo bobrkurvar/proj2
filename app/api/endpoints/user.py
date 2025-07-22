@@ -21,7 +21,7 @@ async def crete_user(user: UserInputFromBot, manager: DbManagerDep):
         raise CustomDbException(message='ошибка целостности бд', detail='пользователь с данным id уже существует', status_code=status.HTTP_200_OK)
     return dict(first_name=user.first_name, last_name=user.last_name)
 
-@router.get('/{ident}', summary='список пользователей',status_code=status.HTTP_200_OK)
+@router.get('/{ident}', summary='получение пользователя',status_code=status.HTTP_200_OK)
 async def read_user(ident: int, manager: DbManagerDep):
     log.debug('запрос на чтение пользователя %s', ident)
     res = await manager.read(model=User, ident='id', ident_val=ident)

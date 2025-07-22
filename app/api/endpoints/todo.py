@@ -23,8 +23,8 @@ async def read_todo_list(ident: int, manager: DbManagerDep):
     return res
 
 @router.get('',status_code=status.HTTP_200_OK, summary='получение списка задач')
-async def read_todo_list(ident: str, ident_val: int,
-                         manager: DbManagerDep, limit: int | None = None, offset: int | None = None, order_by: str | None = None):
+async def read_todo_list(manager: DbManagerDep, ident: str | None = None,
+                         ident_val: int | None = None,limit: int | None = None, offset: int | None = None, order_by: str | None = None):
     log.debug('запрос на чтение задач по %s со значением: %s limit: %s, offset: %s', ident, ident_val, limit, offset)
     res = await manager.read(Todo, ident=ident, ident_val=ident_val, limit=limit, offset=offset, order_by = order_by)
     return res
