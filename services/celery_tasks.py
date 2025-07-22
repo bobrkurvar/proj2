@@ -29,16 +29,12 @@ async def _task_send_about_delete():
         await ext_api_manager.connect()
     todos = await ext_api_manager.read(prefix='todo')
     for i in todos:
-        kb = get_inline_kb('close')
-        doer_id = i.get('doer_id')
-        task_id = i.get('id')
-        await bot.send_message(chat_id=doer_id, text=f'время задание {task_id} истекло', reply_markup=kb)
         if i.get('deadline') == date.today():
             await ext_api_manager.remove(prefix='todo', ident='id', ident_val=i.get('id'))
             kb = get_inline_kb('close')
             doer_id = i.get('doer_id')
             task_id = i.get('id')
-            await bot.send_message(chat_id=doer_id, text=f'время задание {task_id} истекло', reply_markup=kb)
+            await bot.send_message(chat_id=doer_id, text=f'время задания {task_id} истекло', reply_markup=kb)
 
 async def _task_delete_message():
     messages = await ext_api_manager.read(prefix='message')
