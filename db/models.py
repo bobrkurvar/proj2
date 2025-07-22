@@ -14,6 +14,7 @@ class User(Base):
     last_name: Mapped[str | None] = mapped_column(default=None)
     activity: Mapped[bool] = mapped_column(default=True)
     task: Mapped[list["Todo"]] = relationship("Todo", back_populates="user")
+    message: Mapped[list["Messages"]] = relationship('Messages', back_populates='user')
 
     def __str__(self):
         text = f"id: {self.id}, first_name: {self.first_name}, last_name: {self.last_name}, activity: {self.activity}"
@@ -44,3 +45,9 @@ class Todo(Base):
         return {'id': self.id, "name": self.name, "content": self.content,
                 "data_of_creation": self.date_of_creation,
                 "deadline": self.deadline, "doer_id": self.doer_id}
+
+class Messages(Base):
+    __tablename__ = 'messages'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("bot_user.id"), index=True)
+    user: Mapped[User] = relationship("User", back_populates="message")
