@@ -15,6 +15,8 @@ class InCachePageMiddleware(BaseMiddleware):
                        data: dict[str, Any]):
 
         state, callback_data, ext_api_manager = data.get('state'), data.get('callback_data'), data.get('ext_api_manager')
+        cur_user = (await state.get_data()).get(str(event.from_user.id), dict())
+        #pages = cur_user.get('pages')
         pages = (await state.get_data()).get('pages')
         limit = callback_data.limit
         offsets = {'list': callback_data.offset, '>>': callback_data.offset + limit,
