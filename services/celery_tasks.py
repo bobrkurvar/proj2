@@ -39,7 +39,11 @@ async def _task_send_about_delete():
 async def _task_delete_message():
     messages = await ext_api_manager.read(prefix='message')
     for i in messages:
-        await bot.delete_message(i.get('user_id'), i.get('id'))
+        try:
+            await bot.delete_message(i.get('user_id'), i.get('id'))
+        except:
+            pass
+    await ext_api_manager.remove(prefix='message')
 
 
 @app.task
