@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
                     'model': ErrorResponse
                 }
             },
-            summary='получение задач'
+            summary='Получение задач'
 )
 async def read_todo_list(ident: str,
                          ident_val: int,
@@ -64,14 +64,16 @@ async def create_task(todo: TodoInput):
 
 @router.patch('',
               summary='обновление задачи',
-              response_model=TodoOutput,
               responses={
                   status.HTTP_409_CONFLICT: {
-                      'detail': 'Задача не найдена',
+                      'detail': 'Задача для обновления не найдена',
                       'model': ErrorResponse
+                  },
+                  status.HTTP_204_NO_CONTENT: {
+                      'detail': 'Пустое тело ответа'
                   }
               },
-              status_code=status.HTTP_200_OK
+              status_code=status.HTTP_204_NO_CONTENT
 )
 async def update_task(todo: TodoUpdate):
     todo_data = todo.model_dump()
@@ -94,19 +96,33 @@ async def update_task(todo: TodoUpdate):
         for_update.append('deadline')
     log.debug('запрос на обновление в задании '
              '%s параметров: %s', todo.ident_val, *for_update)
-    await manager.update(Todo, **todo_data)
+    todo = await manager.update(Todo, **todo_data)
+    if todo is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Задача для обновления не найдена'
+        )
     log.info('в задаче: %s обновлены параметры: %s', todo.ident_val, *for_update)
 
-
-@router.delete('',
-               summary='удаление задачи',
+@router.delete('{todo_id}',
+               summary='Удаление задачи по id или всех задач',
                status_code=status.HTTP_200_OK,
                response_model=TodoOutput,
+               responses={
+                   status.HTTP_404_NOT_FOUND: {
+                       'detail' : 'Задача для удаления не найдена',
+                       'model': ErrorResponse
+                   }
+               }
 )
-async def delete_task(todo_id: int | None = None):
-    if todo_id:
-        await manager.delete(Todo, ident = {'id': todo_id})
-        log.info('задание %s удалено', todo_id)
+async def delete_task_by_id_or_all(todo_id: int | None):
+    if todo_id is None:
+        await manager.delete(model=Todo)
     else:
-        await manager.delete(Todo)
-        log.info('все задания пользователя удалены')
+        todo = await manager.delete(model=Todo, ident_val=todo_id)
+        if todo is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Задача для удаления не найдена'
+            )
+        return todo
