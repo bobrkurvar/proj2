@@ -1,30 +1,78 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, HTTPException
 from db import manager
 from db.models import Todo
-from app.api.schemas.todo import TodoInput, TodoUpdate
+from app.api.schemas.todo import TodoInput, TodoOutput, TodoUpdate
+from app.exceptions.schemas import ErrorResponse
+from sqlalchemy.exc import IntegrityError
 from datetime import date
+from typing import List
 import logging
 
 router = APIRouter(tags=['Todo'])
 
 log = logging.getLogger(__name__)
 
-@router.get('',status_code=status.HTTP_200_OK, summary='получение задач')
-async def read_todo_list(ident: str, ident_val: int, limit: int | None = None, offset: int | None = None, order_by: str | None = None):
+@router.get('',
+            status_code=status.HTTP_200_OK,
+            response_model=List[TodoOutput],
+            responses={
+                status.HTTP_404_NOT_FOUND: {
+                    'detail': 'Задачи не найдены',
+                    'model': ErrorResponse
+                }
+            },
+            summary='получение задач'
+)
+async def read_todo_list(ident: str,
+                         ident_val: int,
+                         limit: int | None = None,
+                         offset: int | None = None,
+                         order_by: str | None = None
+):
     log.debug('запрос на чтение задач по %s со значением: %s limit: %s, offset: %s', ident, ident_val, limit, offset)
     res = await manager.read(Todo, ident=ident, ident_val=ident_val, limit=limit, offset=offset, order_by = order_by)
+    if not res:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Задачи не найдены'
+        )
     return res
 
-@router.post('',status_code=status.HTTP_201_CREATED, summary='создание задачи')
+@router.post('',
+             status_code=status.HTTP_201_CREATED,
+             response_model=TodoOutput,
+             responses={
+                status.HTTP_409_CONFLICT: {
+                    'detail': 'Задача с таки id уже существует',
+                    'model': ErrorResponse
+                }
+             },
+             summary='создание задачи'
+)
 async def create_task(todo: TodoInput):
     todo = todo.model_dump()
     todo.update(deadline=date(**todo.get('deadline')))
     log.debug('запрос на создание задания')
-    todo_id = await manager.create(Todo, **todo)
-    log.info("задание %s добавлено", todo_id)
-    return todo_id
+    try:
+        todo = await manager.create(Todo, **todo)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail='Задача с таким id уже существует'
+        )
+    return todo
 
-@router.patch('', summary='обновление данных задачи', status_code=status.HTTP_200_OK)
+@router.patch('',
+              summary='обновление задачи',
+              response_model=TodoOutput,
+              responses={
+                  status.HTTP_409_CONFLICT: {
+                      'detail': 'Задача не найдена',
+                      'model': ErrorResponse
+                  }
+              },
+              status_code=status.HTTP_200_OK
+)
 async def update_task(todo: TodoUpdate):
     todo_data = todo.model_dump()
     for_update = []
@@ -50,7 +98,11 @@ async def update_task(todo: TodoUpdate):
     log.info('в задаче: %s обновлены параметры: %s', todo.ident_val, *for_update)
 
 
-@router.delete('', summary='удаление задачи', status_code=status.HTTP_200_OK)
+@router.delete('',
+               summary='удаление задачи',
+               status_code=status.HTTP_200_OK,
+               response_model=TodoOutput,
+)
 async def delete_task(todo_id: int | None = None):
     if todo_id:
         await manager.delete(Todo, ident = {'id': todo_id})

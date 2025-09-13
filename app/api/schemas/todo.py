@@ -6,6 +6,12 @@ class TodoInput(BaseModel):
     doer_id: int | None = None
     deadline: dict[str, int] | None = None
 
+class TodoOutput(BaseModel):
+    name: str
+    content: str
+    doer_id: int
+    deadline: dict[str, int]
+
 class TodoUpdate(BaseModel):
     ident: str = 'id'
     ident_val: int
