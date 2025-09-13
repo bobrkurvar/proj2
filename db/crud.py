@@ -33,13 +33,15 @@ class Crud:
         async with self._session.begin() as session:
             tup = model(**kwargs)
             session.add(tup)
-            return tup
+            session.flush()
+            return tup.model_dump()
 
     async def delete(self, model, ident = None):
         async with self._session.begin() as session:
             if ident:
                 for_remove = await session.get(model, ident)
                 await session.delete(for_remove)
+                return for_remove.model_dump()
             else:
                 await session.execute(delete(model))
 

@@ -10,27 +10,26 @@ class Base(AsyncAttrs, DeclarativeBase):
 class User(Base):
     __tablename__ = 'bot_user'
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
-    first_name: Mapped[str] = mapped_column()
-    last_name: Mapped[str | None] = mapped_column(default=None)
+    username: Mapped[str]
     activity: Mapped[bool] = mapped_column(default=True)
     task: Mapped[list["Todo"]] = relationship("Todo", back_populates="user")
 
     def __str__(self):
-        text = f"id: {self.id}, first_name: {self.first_name}, last_name: {self.last_name}, activity: {self.activity}"
+        text = f"id: {self.id}, username: {self.username}, activity: {self.activity}"
         return text
 
     def __repr__(self):
-        text = f"id: {self.id}, first_name: {self.first_name}, last_name: {self.last_name}, activity: {self.activity}"
+        text = f"id: {self.id}, username: {self.username}, activity: {self.activity}"
         return text
 
-    def to_dict(self):
-        return {'id': self.id, "first_name": self.first_name, "last_name": self.last_name, "activity": self.activity}
+    def model_dump(self):
+        return {'id': self.id, 'username': self.username}
 
 class Todo(Base):
     __tablename__ = 'todo'
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    name: Mapped[str] = mapped_column()
-    content: Mapped[str] = mapped_column()
+    name: Mapped[str]
+    content: Mapped[str]
     date_of_creation: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today())
     deadline: Mapped[datetime.date | None ] = mapped_column(Date, default = None)
     doer_id: Mapped[int] = mapped_column(ForeignKey("bot_user.id"), index=True)
@@ -40,7 +39,11 @@ class Todo(Base):
         text = f"task: {self.name}, content: {self.content}"
         return text
 
-    def to_dict(self):
+    def __repr__(self):
+        text = f"task: {self.name}, content: {self.content}"
+        return text
+
+    def model_dump(self):
         return {'id': self.id, "name": self.name, "content": self.content,
                 "data_of_creation": self.date_of_creation,
                 "deadline": self.deadline, "doer_id": self.doer_id}

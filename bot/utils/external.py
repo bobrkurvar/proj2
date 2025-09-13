@@ -14,33 +14,40 @@ def handle_ext_api(func):
             log.warning('поключение не установлено')
     return wrapper
 
+def add_exception_handler(cls):
+    api_methods = ["create", "remove", "read", "update"]
+    for attr_name in dir(cls):
+        attr = getattr(cls, attr_name)
+        if attr in api_methods:
+            setattr(cls, attr_name, handle_ext_api(attr))
+    return cls
+
+@add_exception_handler
 class MyExternalApiForBot:
+    _session = None
     def __init__(self, url):
         self._url = url
-        self._session = None
+        if self.__class__._session is None:
+            self._session = ClientSession()
 
-    @handle_ext_api
     async def create(self, prefix: str, **data):
         res = await self._session.post(self._url+ prefix, json = data)
         return res
 
-    @handle_ext_api
     async def remove(self, prefix: str, **args):
         await self._session.delete(self._url + prefix, params=args)
 
-    @handle_ext_api
     async def read(self, prefix: str, **kwargs):
         res = await self._session.get(self._url + prefix, params=kwargs)
         res = await res.json()
         return res
 
-    @handle_ext_api
     async def update(self, prefix: str, **kwargs):
         await self._session.patch(self._url + prefix, json=kwargs)
 
-    async def connect(self):
-        if not self._session:
-            self._session = ClientSession()
+    # async def connect(self):
+    #     if not self._session:
+    #         self._session = ClientSession()
 
     async def close(self):
         if self._session:
