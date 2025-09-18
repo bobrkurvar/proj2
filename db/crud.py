@@ -68,9 +68,11 @@ class Crud:
                 query = query.offset(offset)
             if limit:
                 query = query.limit(limit)
-            res = (await session.execute(query)).scalars()
+            res = (await session.execute(query)).scalars().all()
             if not res:
+                log.debug('Возвращаемый список пуст: %s', res)
                 raise NotFoundError(model.__name__, ident, ident_val)
+            log.debug('Список не пуст: %s', res)
             return [r.model_dump() for r in res]
 
     async def close_and_dispose(self):

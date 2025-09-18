@@ -7,11 +7,12 @@ from app.exceptions.handlers import (not_found_in_db_exceptions_handler,
 )
 from db.exceptions import NotFoundError, AlreadyExistsError, DatabaseError
 from contextlib import asynccontextmanager
-from db import manager
+from db import get_db_manager
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     yield
+    manager = get_db_manager()
     manager.close_and_dispose()
 
 app = FastAPI(lifespan=lifespan)

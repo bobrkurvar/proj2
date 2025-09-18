@@ -9,7 +9,10 @@ def not_found_in_db_exceptions_handler(request: Request, exc: NotFoundError):
     log.exception('Ошибка поиска в базе данных')
     return JSONResponse(
         status_code = status.HTTP_404_NOT_FOUND,
-        content = str(exc)
+        content = {
+            'code': status.HTTP_404_NOT_FOUND,
+            'detail': str(exc)
+        }
     )
 
 def entity_already_exists_in_db_exceptions_handler(request: Request, exc: AlreadyExistsError):
@@ -26,12 +29,18 @@ def data_base_exception_handler(request: Request, exc: DatabaseError):
     log.exception('Ошибка базы данных')
     return JSONResponse(
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content = str(exc)
+        content={
+            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+            'description': str(exc)
+        }
     )
 
 def global_exception_handler(request: Request, exc):
     log.exception("Глобальная ошибка")
     return JSONResponse(
         status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content = "Глобальная ошибка"
+        content={
+            'code': status.HTTP_500_INTERNAL_SERVER_ERROR,
+            'description': str(exc)
+        }
     )

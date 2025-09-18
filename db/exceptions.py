@@ -10,7 +10,7 @@ class NotFoundError(RepositoryError):
         self.ident = ident
         self.ident_val = ident_val
         if ident and ident_val:
-            super().__init__(f"{entity_name} with {ident}={ident_val} not found")
+            super().__init__(f"{entity_name} with {ident} = {ident_val} not found")
         else:
             super().__init__(f"{entity_name} not found")
 

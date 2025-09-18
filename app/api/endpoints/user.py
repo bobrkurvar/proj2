@@ -1,16 +1,17 @@
-from fastapi import APIRouter, status, HTTPException
+from fastapi import APIRouter, status, HTTPException, Depends
 from fastapi.responses import Response
 
 from app.api.schemas.user import UserInput, UserOutput, UserDelete
 from app.exceptions.schemas import ErrorResponse
 from sqlalchemy.exc import IntegrityError, NoResultFound
-from db import manager
 from db.models import User
+from db import get_db_manager, Crud
 from typing import List, Annotated
 import logging
 
 router = APIRouter(tags=['Users'])
 log = logging.getLogger(__name__)
+dbManagerDep = Annotated[Crud, Depends(get_db_manager)]
 
 @router.post('',
              summary='создание пользователя',
@@ -23,7 +24,7 @@ log = logging.getLogger(__name__)
                  }
              }
 )
-async def crete_user(user: UserInput):
+async def crete_user(user: UserInput, manager: dbManagerDep):
     log.debug('запрос на создание пользователя: %s', user.id)
     # try:
     user = await manager.create(User, **user.model_dump())
@@ -46,7 +47,7 @@ async def crete_user(user: UserInput):
                 }
             }
 )
-async def read_user_by_criteria(username: str | None = None, activity: bool | None = None):
+async def read_user_by_criteria(manager: dbManagerDep, username: str | None = None, activity: bool | None = None):
     user = None
     if (username is None) and (activity is None):
         log.debug('запрос на чтение всех пользователей')
@@ -58,11 +59,6 @@ async def read_user_by_criteria(username: str | None = None, activity: bool | No
         elif not (activity is None):
             log.debug('запрос на чтение пользователя с активностью: %s', activity)
             user = await manager.read(model=User, ident='activity', ident_val=activity)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Список пользователей пуст' if (username is None) and (activity is None) else 'Пользователь не найден'
-        )
     return user
 
 @router.delete('{user_id}',
@@ -76,7 +72,7 @@ async def read_user_by_criteria(username: str | None = None, activity: bool | No
                 }
             }
 )
-async def delete_by_id(user_id: int):
+async def delete_by_id(user_id: int, manager: dbManagerDep):
     log.debug('запрос на удаление пользователя: %s', user_id)
     user = await manager.delete(User, user_id)
     if not user:
@@ -98,7 +94,7 @@ async def delete_by_id(user_id: int):
                    }
                }
 )
-async def delete_by_criteria(user: UserDelete):
+async def delete_by_criteria(user: UserDelete, manager: dbManagerDep):
     try:
         if not (user.username is None):
             log.debug('Запрос на удаление пользователя по критерию %s с значением %s', 'username', user.username)

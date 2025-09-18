@@ -1,16 +1,16 @@
-from fastapi import APIRouter, status, HTTPException
-from db import manager
+from fastapi import APIRouter, status, HTTPException, Depends
 from db.models import Todo
+from db import get_db_manager, Crud
 from app.api.schemas.todo import TodoInput, TodoOutput, TodoUpdate
 from app.exceptions.schemas import ErrorResponse
 from sqlalchemy.exc import IntegrityError
 from datetime import date
-from typing import List
+from typing import List, Annotated
 import logging
 
 router = APIRouter(tags=['Todo'])
-
 log = logging.getLogger(__name__)
+dbManagerDep = Annotated[Crud, Depends(get_db_manager)]
 
 @router.get('',
             status_code=status.HTTP_200_OK,
@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
             summary='Получение задач'
 )
 async def read_todo_list(ident: str,
+                         manager: dbManagerDep,
                          ident_val: int,
                          limit: int | None = None,
                          offset: int | None = None,
@@ -49,7 +50,7 @@ async def read_todo_list(ident: str,
              },
              summary='создание задачи'
 )
-async def create_task(todo: TodoInput):
+async def create_task(todo: TodoInput, manager: dbManagerDep):
     todo = todo.model_dump()
     todo.update(deadline=date(**todo.get('deadline')))
     log.debug('запрос на создание задания')
@@ -75,7 +76,7 @@ async def create_task(todo: TodoInput):
               },
               status_code=status.HTTP_204_NO_CONTENT
 )
-async def update_task(todo: TodoUpdate):
+async def update_task(todo: TodoUpdate, manager: dbManagerDep):
     todo_data = todo.model_dump()
     for_update = []
     del todo_data['is_delete']
@@ -115,7 +116,7 @@ async def update_task(todo: TodoUpdate):
                    }
                }
 )
-async def delete_task_by_id_or_all(todo_id: int | None):
+async def delete_task_by_id_or_all(todo_id: int | None, manager: dbManagerDep):
     if todo_id is None:
         await manager.delete(model=Todo)
     else:
