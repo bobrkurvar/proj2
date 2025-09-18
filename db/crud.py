@@ -1,24 +1,10 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select, update, delete, asc
-# from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-# from app.exceptions import CustomDbException
-# from functools import wraps
+from sqlalchemy.exc import IntegrityError
+from .exceptions import NotFoundError, AlreadyExistsError
 import logging
 
 log = logging.getLogger(__name__)
-
-# def handle_db_operation(func):
-#     @wraps(func)
-#     async def wrapper(self, model, *args, **kwargs):
-#         try:
-#             return await func(self, model, *args, **kwargs)
-#         except IntegrityError as err:
-#             raise CustomDbException(message='данный пользователь уже создан',
-#                                   detail=' '.join(err.detail), status_code=200)
-#         except SQLAlchemyError:
-#             raise CustomDbException(message='ошибка на сторорне быза данных', detail='ошибка на сторорне быза данных',
-#                                   status_code=500)
-#     return wrapper
 
 class Crud:
     _engine = None
@@ -30,19 +16,38 @@ class Crud:
             self.__class__._session = async_sessionmaker(self._engine)
 
     async def create(self, model, **kwargs):
-        async with self._session.begin() as session:
+        try:
             tup = model(**kwargs)
-            session.add(tup)
-            session.flush()
-            return tup.model_dump()
+            async with self._session.begin() as session:
+                    session.add(tup)
+                    return tup.model_dump()
+        except IntegrityError:
+            raise AlreadyExistsError(model.__name__, 'id', tup.id)
 
-    async def delete(self, model, ident = None):
+    async def delete(self, model, ident: str | None = None, ident_val = None):
         async with self._session.begin() as session:
-            if ident:
-                for_remove = await session.get(model, ident)
-                await session.delete(for_remove)
-                return for_remove.model_dump()
+            if not (ident_val is None):
+                if ident is None:
+                    log.debug('Crud получил запрос на удаление id: %s', ident_val)
+                    for_remove = await session.get(model, ident_val)
+                    if not (for_remove is None):
+                        await session.delete(for_remove)
+                        return for_remove.model_dump()
+                    else:
+                        raise NotFoundError(model.__name__, 'id', ident_val)
+                else:
+                    log.debug('Crud получил запрос на удаление по параметру %s: %s', ident, ident_val)
+                    for_remove = (await session.execute(select(model).where(getattr(model, ident) == ident_val))).scalars().all()
+                    if not for_remove:
+                        raise NotFoundError(model.__name__, ident, ident_val)
+                    for chunk in for_remove:
+                        await session.delete(chunk)
+                    else:
+                        return True
             else:
+                models = await session.execute(select(model))
+                if models is None:
+                    raise NotFoundError(model.__name__)
                 await session.execute(delete(model))
 
     async def update(self, model, ident: str, ident_val: int, **kwargs):
@@ -64,6 +69,8 @@ class Crud:
             if limit:
                 query = query.limit(limit)
             res = (await session.execute(query)).scalars()
+            if not res:
+                raise NotFoundError(model.__name__, ident, ident_val)
             return [r.model_dump() for r in res]
 
     async def close_and_dispose(self):

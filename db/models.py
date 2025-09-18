@@ -44,6 +44,11 @@ class Todo(Base):
         return text
 
     def model_dump(self):
-        return {'id': self.id, "name": self.name, "content": self.content,
-                "data_of_creation": self.date_of_creation,
-                "deadline": self.deadline, "doer_id": self.doer_id}
+        return {
+            'id': self.id,
+            "name": self.name,
+            "content": self.content,
+            "data_of_creation": self.date_of_creation,
+            "deadline": self.deadline,
+            "doer_id": self.doer_id
+        }

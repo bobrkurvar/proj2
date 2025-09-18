@@ -104,7 +104,7 @@ async def update_task(todo: TodoUpdate):
         )
     log.info('в задаче: %s обновлены параметры: %s', todo.ident_val, *for_update)
 
-@router.delete('{todo_id}',
+@router.delete('/{todo_id}',
                summary='Удаление задачи по id или всех задач',
                status_code=status.HTTP_200_OK,
                response_model=TodoOutput,

@@ -1,28 +1,37 @@
-from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from fastapi import Request, status
-from app.exceptions.schemas import CustomExceptionModel
+from db.exceptions import NotFoundError, AlreadyExistsError, DatabaseError
 import logging
 
-def custom_exception_handler(request: Request, exc):
-    log = logging.getLogger('proj.app.except')
-    error = jsonable_encoder(CustomExceptionModel(status_code=exc.status_code,
-                                                  er_message=exc.message,
-                                                  er_details=exc.detail))
-    log.exception(error['er_message'])
-    return JSONResponse(status_code=exc.status_code, content=error)
+log = logging.getLogger(__name__)
 
-
-# def request_validation_exception_handler(request, exc):
-#     return JSONResponse(
-#         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-#         content={"message": "Invalid input", "errors": exc.errors()}
-#     )
-#
-def global_exception_handler(request: Request, exc):
-    log = logging.getLogger('proj.app.db')
-    log.exception("Internal server error")
+def not_found_in_db_exceptions_handler(request: Request, exc: NotFoundError):
+    log.exception('Ошибка поиска в базе данных')
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"error": "Internal server error"}
+        status_code = status.HTTP_404_NOT_FOUND,
+        content = str(exc)
+    )
+
+def entity_already_exists_in_db_exceptions_handler(request: Request, exc: AlreadyExistsError):
+    log.exception('Ошибка создания в базе данных')
+    return JSONResponse(
+        status_code = status.HTTP_409_CONFLICT,
+        content = {
+            'code': status.HTTP_409_CONFLICT,
+            'description': str(exc)
+        }
+    )
+
+def data_base_exception_handler(request: Request, exc: DatabaseError):
+    log.exception('Ошибка базы данных')
+    return JSONResponse(
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content = str(exc)
+    )
+
+def global_exception_handler(request: Request, exc):
+    log.exception("Глобальная ошибка")
+    return JSONResponse(
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content = "Глобальная ошибка"
     )
