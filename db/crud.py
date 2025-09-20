@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select, update, delete, asc
 from sqlalchemy.exc import IntegrityError
-from .exceptions import NotFoundError, AlreadyExistsError
+from .exceptions import NotFoundError, AlreadyExistsError, CustomForeignKeyViolationError
+from asyncpg.exceptions import ForeignKeyViolationError
 import logging
 
 log = logging.getLogger(__name__)
@@ -16,13 +17,19 @@ class Crud:
             self.__class__._session = async_sessionmaker(self._engine)
 
     async def create(self, model, **kwargs):
+        tup = model(**kwargs)
         try:
-            tup = model(**kwargs)
             async with self._session.begin() as session:
-                    session.add(tup)
-                    return tup.model_dump()
-        except IntegrityError:
-            raise AlreadyExistsError(model.__name__, 'id', tup.id)
+                session.add(tup)
+                return tup.model_dump()
+        except IntegrityError as err:
+            log.debug('ПЕРЕХВАТИЛ INTEGIRITYERROR')
+            if err.orig.pgcode == '23505':
+                log.debug('ТАКАЯ СУЩНОСТЬ УЖЕ СУЩЕСТВУЕТ')
+                raise AlreadyExistsError(model.__name__, 'id', tup.id)
+            elif err.orig.pgcode == '23503':
+                log.debug('ВНЕШНИЙ КЛЮЧ НА НЕ СУЩЕСТВУЮЩЕЕ ПОЛЕ')
+                raise CustomForeignKeyViolationError(model.__name__, 'doer_id', 3)
 
     async def delete(self, model, ident: str | None = None, ident_val = None):
         async with self._session.begin() as session:
@@ -55,7 +62,7 @@ class Crud:
             query = update(model).where(getattr(model, ident) == ident_val).values(**kwargs)
             await session.execute(query)
 
-    async def read(self, model, ident: str | None = None, ident_val: int | None = None, limit: int | None = None, offset: int | None = None,
+    async def read(self, model, ident: str | None = 'id', ident_val: int | None = None, limit: int | None = None, offset: int | None = None,
                    order_by: str | None = None):
         async with self._session.begin() as session:
             query = select(model)
@@ -73,6 +80,9 @@ class Crud:
                 log.debug('Возвращаемый список пуст: %s', res)
                 raise NotFoundError(model.__name__, ident, ident_val)
             log.debug('Список не пуст: %s', res)
+            if len(res) == 1:
+                log.debug('Одно возвращаемое значение')
+                return res[0].model_dump()
             return [r.model_dump() for r in res]
 
     async def close_and_dispose(self):

@@ -18,14 +18,25 @@ class NotFoundError(RepositoryError):
 class AlreadyExistsError(RepositoryError):
     """Запись с таким атрибутом уже существует в базе"""
 
-    def __init__(self, entity: str, attr: str | None = None, attr_val = None):
-        self.attr = attr
-        self.ident_val = attr_val
+    def __init__(self, entity: str, field: str | None = None, value = None):
+        self.field = field
+        self.value = value
         self.entity = entity
-        if attr and attr_val:
-            super().__init__(f"Запись с {attr} = {attr_val} в таблице {entity} уже существует")
+        if field and value:
+            super().__init__(f"Запись с {field} = {value} в таблице {entity} уже существует")
         else:
             super().__init__(f"Запись с таким id в таблице {entity} уже существует")
+
+class CustomForeignKeyViolationError(RepositoryError):
+    """Ошибка внешнего ключа"""
+
+    def __init__(self, entity: str, field: str, value):
+        self.entity_name = entity
+        self.field = field
+        self.value = value
+        super().__init__(
+            f"Foreign key violation: {entity}.{field} = {value} references non-existent entity"
+        )
 
 
 class DatabaseError(RepositoryError):
