@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from bot.utils.keyboards import get_inline_kb
 from bot.lexicon import phrases
 from bot.filters.states import FSMTodoFill, FSMTodoEdit, FSMSearch
-from bot.utils import MyExternalApiForBot
+from services.external import MyExternalApiForBot
 from bot.utils.handlers import to_date_dict
 from bot.filters.custom_filters import IsDate
 import logging

@@ -3,7 +3,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command, CommandStart
 from bot.lexicon import phrases
 from aiogram.fsm.context import FSMContext
-from bot.utils import MyExternalApiForBot
+from services.external import MyExternalApiForBot
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.utils.keyboards import get_inline_kb
 from aiogram.exceptions import TelegramBadRequest
@@ -13,8 +13,7 @@ router = Router(name="command_core")
 
 @router.message(CommandStart())
 async def process_command_start(message: Message, ext_api_manager: MyExternalApiForBot, state: FSMContext):
-    user = {'id': message.from_user.id, 'first_name': message.from_user.first_name,
-            'last_name': message.from_user.last_name}
+    user = {'id': message.from_user.id, 'username': message.from_user.username}
     await ext_api_manager.create(prefix = 'user', **user)
     data = await state.get_data()
     msg = data.get('msg')
