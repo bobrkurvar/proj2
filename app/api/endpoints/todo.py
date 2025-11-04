@@ -1,9 +1,8 @@
-from fastapi import APIRouter, status, HTTPException, Depends
+from fastapi import APIRouter, status, Depends
 from db.models import Todo
 from db import get_db_manager, Crud
 from app.api.schemas.todo import TodoInput, TodoOutput, TodoUpdate
 from app.exceptions.schemas import ErrorResponse
-from sqlalchemy.exc import IntegrityError
 from datetime import date
 from typing import List, Annotated
 import logging
@@ -30,7 +29,7 @@ async def read_todo_by_criteria(
                          offset: int | None = None,
                          order_by: str | None = None
 ):
-    if not (doer_id is None):
+    if doer_id is not None:
         log.debug('запрос на чтение задач по %s со значением: %s limit: %s, offset: %s', 'doer_id', doer_id, limit, offset)
         res = await manager.read(Todo, ident='doer_id', ident_val=doer_id, limit=limit, offset=offset, order_by = order_by)
     else:
@@ -66,14 +65,10 @@ async def read_todo_by_id(todo_id: int, manager: dbManagerDep):
 )
 async def create_task(todo: TodoInput, manager: dbManagerDep):
     todo = todo.model_dump()
-    if todo.get('id') is None: todo.pop('id')
+    deadline = date(**todo.pop("deadline"))
     log.debug('запрос на создание задания')
-    #try:
-    log.debug('Попытка создать task')
-    todo = await manager.create(Todo, **todo)
-    # except Exception as err:
-    #     log.debug('Исключение %s прокидывается дальше', err.__class__.__name__)
-    #     raise
+    todo = await manager.create(Todo, **todo, deadline=deadline)
+    log.debug(f"задача {todo} создана")
     return todo
 
 @router.patch('',

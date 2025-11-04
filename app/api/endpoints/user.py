@@ -26,14 +26,8 @@ dbManagerDep = Annotated[Crud, Depends(get_db_manager)]
 )
 async def crete_user(user: UserInput, manager: dbManagerDep):
     log.debug('запрос на создание пользователя: %s', user.id)
-    # try:
     user = await manager.create(User, **user.model_dump())
     log.info('пользователь: %s создан', user.get('id'))
-    # except IntegrityError:
-    #     raise HTTPException(
-    #         status_code = status.HTTP_409_CONFLICT,
-    #         detail = 'Пользователь с таким id уже существует'
-    #     )
     return user
 
 @router.get('',

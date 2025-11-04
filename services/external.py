@@ -15,39 +15,39 @@ def handle_ext_api(func):
     return wrapper
 
 def add_exception_handler(cls):
-    api_methods = ["create", "remove", "read", "update"]
-    for attr_name in dir(cls):
-        attr = getattr(cls, attr_name)
-        if attr in api_methods:
-            setattr(cls, attr_name, handle_ext_api(attr))
+    api_methods = {"create", "remove", "read", "update"}
+    for name in api_methods:
+        if hasattr(cls, name):
+            method = getattr(cls, name)
+            setattr(cls, name, handle_ext_api(method))
     return cls
 
 @add_exception_handler
 class MyExternalApiForBot:
-    _session = None
     def __init__(self, url):
         self._url = url
-        if self.__class__._session is None:
-            self._session = ClientSession()
+        self._session = None
+
 
     async def create(self, prefix: str, **data):
-        res = await self._session.post(self._url+ prefix, json = data)
-        return res
+        async with self._session.post(self._url+ prefix, json = data) as res:
+            return await res.json()
 
     async def remove(self, prefix: str, **args):
-        await self._session.delete(self._url + prefix, params=args)
+        async with self._session.delete(self._url + prefix, params=args) as res:
+            return await res.json()
 
     async def read(self, prefix: str, **kwargs):
-        res = await self._session.get(self._url + prefix, params=kwargs)
-        res = await res.json()
-        return res
+        async with self._session.get(self._url + prefix, params=kwargs) as res:
+            return await res.json()
 
     async def update(self, prefix: str, **kwargs):
-        await self._session.patch(self._url + prefix, json=kwargs)
+        async with self._session.patch(self._url + prefix, json=kwargs) as res:
+            return await res.json()
 
-    # async def connect(self):
-    #     if not self._session:
-    #         self._session = ClientSession()
+    async def connect(self):
+        if not self._session:
+            self._session = ClientSession()
 
     async def close(self):
         if self._session:

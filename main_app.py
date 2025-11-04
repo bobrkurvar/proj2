@@ -22,8 +22,12 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(main_router)
 
 
-app.add_exception_handler(Exception, global_exception_handler)
 app.add_exception_handler(NotFoundError, not_found_in_db_exceptions_handler)
-app.add_exception_handler(AlreadyExistsError, entity_already_exists_in_db_exceptions_handler)
-app.add_exception_handler(CustomForeignKeyViolationError, foreign_key_violation_exceptions_handler)
+app.add_exception_handler(
+    AlreadyExistsError, entity_already_exists_in_db_exceptions_handler
+)
+app.add_exception_handler(
+    CustomForeignKeyViolationError, foreign_key_violation_exceptions_handler
+)
 app.add_exception_handler(DatabaseError, data_base_exception_handler)
+app.add_exception_handler(Exception, global_exception_handler)

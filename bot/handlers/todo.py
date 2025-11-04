@@ -2,14 +2,16 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import StateFilter
 from bot.filters.callback_factory import CallbackFactoryTodo
+from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from bot.utils.keyboards import get_inline_kb
 from bot.lexicon import phrases
 from bot.filters.states import FSMTodoFill, FSMTodoEdit, FSMSearch
-from bot.utils import MyExternalApiForBot
+from services.external import MyExternalApiForBot
 from bot.utils.handlers import to_date_dict
 from bot.filters.custom_filters import IsDate
 import logging
+import datetime
 
 
 router = Router()
@@ -20,7 +22,11 @@ log = logging.getLogger(__name__)
 async def process_fill_task_name(message: Message, state: FSMContext):
     kb = get_inline_kb('MENU')
     msg = (await state.get_data()).get('msg')
-    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fill_todo_content, reply_markup=kb)).message_id
+    try:
+        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
+    except TelegramBadRequest:
+        pass
+    msg = (await message.answer(text=phrases.fill_todo_content, reply_markup=kb)).message_id
     await state.update_data(msg=msg, name=message.text)
     await state.set_state(FSMTodoFill.fill_content)
 
@@ -29,7 +35,11 @@ async def process_fill_task_name(message: Message, state: FSMContext):
 async def process_fill_task_content(message: Message, state: FSMContext):
     kb = get_inline_kb('MENU')
     msg = (await state.get_data()).get('msg')
-    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fill_todo_deadline, reply_markup=kb)).message_id
+    try:
+        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
+    except TelegramBadRequest:
+        pass
+    msg = (await message.answer(text=phrases.fill_todo_deadline, reply_markup=kb)).message_id
     await state.update_data(msg=msg, content=message.text)
     await state.set_state(FSMTodoFill.fill_deadline)
 
@@ -37,15 +47,24 @@ async def process_fill_task_content(message: Message, state: FSMContext):
 async def process_fill_task_deadline_success(message: Message, state: FSMContext, ext_api_manager: MyExternalApiForBot):
     data = await state.get_data()
     deadline = to_date_dict(message.text)
-    to_update = dict(doer_id=message.from_user.id, deadline=deadline, content=data.pop('content'), name=data.pop('name'))
     kb_data = dict(doer_id=message.from_user.id)
     msg = data.get('msg')
     kb = get_inline_kb('MENU', **kb_data)
-    await ext_api_manager.create('todo', **to_update)
-    msg = (await message.bot.edit_message_text(message_id = msg, chat_id=message.chat.id, text=phrases.created_todo, reply_markup=kb)).message_id
+    await ext_api_manager.create(
+        'todo',
+        doer_id=message.from_user.id,
+        deadline=deadline,
+        content=data.pop('content'),
+        name=data.pop('name')
+    )
+    try:
+        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
+    except TelegramBadRequest:
+        pass
+    msg = (await message.answer(text=phrases.created_todo, reply_markup=kb)).message_id
     data.pop('pages')
     data.update(msg=msg)
-    await state.clear()
+    await state.set_state(None)
     await state.update_data(data)
 
 @router.message(StateFilter(FSMTodoFill.fill_deadline))
@@ -53,9 +72,10 @@ async def process_fill_task_deadline_fail(message: Message, state: FSMContext):
     msg = (await state.get_data()).get('msg')
     kb = get_inline_kb('MENU')
     try:
-        msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
-    except:
+        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
+    except TelegramBadRequest:
         pass
+    msg = (await message.answer(text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
     await state.update_data(msg=msg)
 
 @router.callback_query(CallbackFactoryTodo.filter(), StateFilter(FSMTodoEdit.select_crit))

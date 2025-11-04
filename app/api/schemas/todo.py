@@ -2,18 +2,17 @@ from pydantic import BaseModel
 from datetime import date
 
 class TodoInput(BaseModel):
-    id: int | None = None
     name: str
     content: str
     doer_id: int | None = None
-    deadline: date | None = None
+    deadline: dict | None = None
 
 class TodoOutput(BaseModel):
     id: int
     name: str
     content: str
     doer_id: int
-    deadline: date
+    #deadline: dict | None = None
 
 class TodoUpdate(BaseModel):
     ident: str = 'id'

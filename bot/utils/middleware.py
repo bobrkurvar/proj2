@@ -27,7 +27,10 @@ class InCachePageMiddleware(BaseMiddleware):
         if pages is None:
             log.debug('в кэше нет страниц(pages None)')
             pages = {}
-            to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
+            to_update = await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset)
+            log.debug("to_update %s", to_update)
+            if to_update is None:
+                to_update = []
             pages.update({offset: to_update})
             if not to_update:
                 log.error('список заданий пуст')

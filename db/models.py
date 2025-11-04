@@ -1,6 +1,6 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.asyncio import AsyncAttrs
-from sqlalchemy.types import Date, BigInteger
+from sqlalchemy.types import Date, BigInteger, Integer
 from sqlalchemy import ForeignKey
 import datetime
 
@@ -27,7 +27,7 @@ class User(Base):
 
 class Todo(Base):
     __tablename__ = 'todo'
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
     name: Mapped[str]
     content: Mapped[str]
     date_of_creation: Mapped[datetime.date] = mapped_column(Date, default=datetime.date.today())
