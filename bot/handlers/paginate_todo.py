@@ -13,7 +13,6 @@ from services.external import MyExternalApiForBot
 import logging
 
 router = Router()
-router.callback_query.middleware(InCachePageMiddleware())
 
 log = logging.getLogger(__name__)
 
@@ -88,16 +87,18 @@ async def handle_delete_button(callback: CallbackQuery, callback_data: CallbackF
     log.debug('in delete offset: %s', callback_data.offset)
     pages = (await state.get_data()).get('pages').get(str(callback_data.offset))
     buttons = []
+    buttons_ids_lst = []
     if pages:
         buttons = []
         for i in pages:
             buttons.append(i.get('name'))
+            buttons_ids_lst.append({'id': i.get("id")})
     else:
         res_text = 'список заданий пуст'
     buttons.append('all')
     buttons.append('MENU')
     params = {'limit': callback_data.limit, 'id': callback_data.id, 'offset': callback_data.offset}
-    kb = get_inline_kb(*buttons, **params)
+    kb = get_inline_kb(*buttons, buttons_data_lst=buttons_ids_lst, **params)
     if not res_text:
         res_text = 'выберете какое задание удалить: '
     await callback.message.edit_text(text=res_text, reply_markup=kb)
@@ -108,31 +109,22 @@ async def select_task_for_edit(callback: CallbackQuery, callback_data: CallbackF
                                      state: FSMContext, ext_api_manager: MyExternalApiForBot):
     data = await state.get_data()
     pages = data.get('pages')
-    num = 0
-    cur_page = pages.get(str(callback_data.offset))
-    for j, i in enumerate(cur_page):
-        if i.get('name') == callback_data.act:
-            num = j
-    cur_task = cur_page[num]
-    data.update(cur_task=cur_task)
     buttons = ('NAME', 'CONTENT', 'DEADLINE', 'MENU') if (await state.get_state()) == FSMTodoEdit.edit_task else ('MENU',)
     kb = get_inline_kb(*buttons, width=3, offset=callback_data.offset)
     text = phrases.process_edit if (await state.get_state()) == FSMTodoEdit.edit_task else phrases.delete_task
     if await state.get_state() == FSMTodoEdit.delete_task:
-        data.pop('cur_task')
         if callback_data.act.lower() == 'all':
-            log.debug('Удаление всех заданий пользоваетля с id: %s', cur_task.get('doer_id'))
+            log.debug('Удаление всех заданий пользователя')
             await ext_api_manager.remove(prefix='todo')
             data.pop('pages')
         else:
-            log.debug('Удаление задания с id: %s', cur_task.get('id'))
-            await ext_api_manager.remove(prefix='todo', todo_id=cur_task.get('id'))
+            log.debug('Удаление одного задания')
+            await ext_api_manager.remove(prefix=f'todo/{callback_data.id}')
             offset = callback_data.offset
             pages.pop(str(offset))
             data.update(pages=pages)
         await state.clear()
     else:
-        log.debug('Изменение задания с id: %s', cur_task.get('id'))
         await state.set_state(FSMTodoEdit.select_crit)
     msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
     data.update(msg=msg)

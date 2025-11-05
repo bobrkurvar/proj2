@@ -11,7 +11,6 @@ from services.external import MyExternalApiForBot
 from bot.utils.handlers import to_date_dict
 from bot.filters.custom_filters import IsDate
 import logging
-import datetime
 
 
 router = Router()
@@ -65,7 +64,7 @@ async def process_fill_task_deadline_success(message: Message, state: FSMContext
     data.pop('pages')
     data.update(msg=msg)
     await state.set_state(None)
-    await state.update_data(data)
+    await state.set_data(data)
 
 @router.message(StateFilter(FSMTodoFill.fill_deadline))
 async def process_fill_task_deadline_fail(message: Message, state: FSMContext):
@@ -111,7 +110,11 @@ async def process_edit_todo(message: Message, state: FSMContext, ext_api_manager
     pages = state_data.get('pages')
     pages.pop(str(offset))
     msg = (await state.get_data()).get('msg')
-    msg = (await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.start, reply_markup=kb)).message_id
+    try:
+        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
+    except TelegramBadRequest:
+        pass
+    msg = (await message.answer(text=phrases.start, reply_markup=kb)).message_id
     state_data.update(msg=msg, pages=pages)
     await state.clear()
     await state.update_data(state_data)
@@ -120,7 +123,11 @@ async def process_edit_todo(message: Message, state: FSMContext, ext_api_manager
 async def process_fail_edit_deadline(message: Message, state: FSMContext):
     msg = (await state.get_data()).get('msg')
     kb = get_inline_kb('MENU')
-    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
+    try:
+        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
+    except TelegramBadRequest:
+        pass
+    msg = (await message.answer(text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
     await state.update_data(msg=msg)
 
 @router.callback_query(StateFilter(FSMSearch.filter), CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})))
@@ -134,8 +141,8 @@ async def handle_select_param(callback: CallbackQuery, callback_data: CallbackFa
         kb = get_inline_kb('menu')
         msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
         data.update(msg=msg)
-    await state.clear()
-    await state.update_data(data)
+    await state.set_state(None)
+    await state.set_data(data)
 
 
 
