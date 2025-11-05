@@ -20,20 +20,17 @@ dbManagerDep = Annotated[Crud, Depends(get_db_manager)]
                     'model': ErrorResponse
                 }
             },
-            summary='Получение задач по критериям'
+            summary='Получение задач по id пользователя'
 )
 async def read_todo_by_criteria(
                          manager: dbManagerDep,
-                         doer_id: int | None = None,
+                         doer_id: int,
                          limit: int | None = None,
                          offset: int | None = None,
                          order_by: str | None = None
 ):
-    if doer_id is not None:
-        log.debug('запрос на чтение задач по %s со значением: %s limit: %s, offset: %s', 'doer_id', doer_id, limit, offset)
-        res = await manager.read(Todo, ident='doer_id', ident_val=doer_id, limit=limit, offset=offset, order_by = order_by)
-    else:
-        res = await manager.read(Todo, ident_val=doer_id)
+    log.debug('запрос на чтение задач по doer_id со значением: %s limit: %s, offset: %s', doer_id, limit, offset)
+    res = await manager.read(Todo, ident="doer_id", ident_val=doer_id, limit=limit, offset=offset, order_by = order_by)
     return res
 
 @router.get('/{todo_id}',

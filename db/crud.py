@@ -22,29 +22,29 @@ class Crud:
             self.__class__._session_factory = async_sessionmaker(self._engine)
 
     async def create(self, model, seq_data: List[Any] | None = None, **kwargs):
-        #try:
-        async with self._session_factory.begin() as session:
-            if seq_data:
-                log.debug("создание нескольких объектов")
-                tup_lst = [model(**new_data) for new_data in seq_data]
-                session.add_all(tup_lst)
-                await session.flush()
-                return [tup.model_dump() for tup in tup_lst]
-            else:
-                log.debug("параметры для создания %s", kwargs)
-                tup = model(**kwargs)
-                log.debug("создание задачи %s", tup)
-                session.add(tup)
-                await session.flush()
-                return tup.model_dump()
-        # except IntegrityError as err:
-        #     log.debug("ПЕРЕХВАТИЛ INTEGIRITYERROR С КОДОМ %s", err.orig.pgcode)
-        #     if err.orig.pgcode == "23505":
-        #         log.debug("ТАКАЯ СУЩНОСТЬ УЖЕ СУЩЕСТВУЕТ")
-        #         raise AlreadyExistsError(model.__name__, "id", tup.id)
-        #     elif err.orig.pgcode == "23503":
-        #         log.debug("ВНЕШНИЙ КЛЮЧ НА НЕ СУЩЕСТВУЮЩЕЕ ПОЛЕ")
-        #         raise CustomForeignKeyViolationError(model.__name__, "doer_id", 3)
+        try:
+            async with self._session_factory.begin() as session:
+                if seq_data:
+                    log.debug("создание нескольких объектов")
+                    tup_lst = [model(**new_data) for new_data in seq_data]
+                    session.add_all(tup_lst)
+                    await session.flush()
+                    return [tup.model_dump() for tup in tup_lst]
+                else:
+                    log.debug("параметры для создания %s", kwargs)
+                    tup = model(**kwargs)
+                    log.debug("создание задачи %s", tup)
+                    session.add(tup)
+                    await session.flush()
+                    return tup.model_dump()
+        except IntegrityError as err:
+            log.debug("ПЕРЕХВАТИЛ INTEGIRITYERROR С КОДОМ %s", err.orig.pgcode)
+            if err.orig.pgcode == "23505":
+                log.debug("ТАКАЯ СУЩНОСТЬ УЖЕ СУЩЕСТВУЕТ")
+                raise AlreadyExistsError(model.__name__, "id", tup.id)
+            elif err.orig.pgcode == "23503":
+                log.debug("ВНЕШНИЙ КЛЮЧ НА НЕ СУЩЕСТВУЮЩЕЕ ПОЛЕ")
+                raise CustomForeignKeyViolationError(model.__name__, "doer_id", 3)
 
     async def delete(self, model, ident: str | None = None, ident_val=None):
         async with self._session_factory.begin() as session:

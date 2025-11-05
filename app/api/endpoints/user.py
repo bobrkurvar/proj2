@@ -1,9 +1,6 @@
 from fastapi import APIRouter, status, HTTPException, Depends
-from fastapi.responses import Response
-
 from app.api.schemas.user import UserInput, UserOutput, UserDelete
 from app.exceptions.schemas import ErrorResponse
-from sqlalchemy.exc import IntegrityError, NoResultFound
 from db.models import User
 from db import get_db_manager, Crud
 from typing import List, Annotated
@@ -89,24 +86,18 @@ async def delete_by_id(user_id: int, manager: dbManagerDep):
                }
 )
 async def delete_by_criteria(user: UserDelete, manager: dbManagerDep):
-    try:
-        if not (user.username is None):
-            log.debug('Запрос на удаление пользователя по критерию %s с значением %s', 'username', user.username)
-            await manager.delete(User, ident='username', ident_val=user.username)
-        elif not (user.activity is None):
-            log.debug('Запрос на удаление пользователя по критерию %s с значением %s', 'activity', user.activity)
-            await manager.delete(User, ident='activity', ident_val=user.activity)
-        else:
-            log.debug('Запрос на удаление всех пользователей')
-            await manager.delete(User)
-        return Response(
-            status_code=status.HTTP_204_NO_CONTENT
-        )
-    except NoResultFound:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Пользователи не найдены'
-        )
+    if not (user.username is None):
+        log.debug('Запрос на удаление пользователя по критерию %s с значением %s', 'username', user.username)
+        await manager.delete(User, ident='username', ident_val=user.username)
+    elif not (user.activity is None):
+        log.debug('Запрос на удаление пользователя по критерию %s с значением %s', 'activity', user.activity)
+        await manager.delete(User, ident='activity', ident_val=user.activity)
+    else:
+        log.debug('Запрос на удаление всех пользователей')
+        await manager.delete(User)
+    # return Response(
+    #     status_code=status.HTTP_204_NO_CONTENT
+    # )
 
 
 

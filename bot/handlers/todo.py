@@ -12,6 +12,7 @@ from bot.utils.handlers import to_date_dict
 from bot.filters.custom_filters import IsDate
 import logging
 
+
 router = Router()
 
 log = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ async def process_fill_task_deadline_success(message: Message, state: FSMContext
     data.pop('pages')
     data.update(msg=msg)
     await state.set_state(None)
-    await state.update_data(data)
+    await state.set_data(data)
 
 @router.message(StateFilter(FSMTodoFill.fill_deadline))
 async def process_fill_task_deadline_fail(message: Message, state: FSMContext):

@@ -1,4 +1,4 @@
-from aiohttp import ClientSession
+from aiohttp import ClientSession, ClientResponseError
 from aiohttp.client_exceptions import ClientConnectorError
 import logging
 from functools import wraps
@@ -30,20 +30,36 @@ class MyExternalApiForBot:
 
 
     async def create(self, prefix: str, **data):
-        async with self._session.post(self._url+ prefix, json = data) as res:
-            return await res.json()
+        try:
+            async with self._session.post(self._url+ prefix, json = data) as res:
+                res.raise_for_status()
+                return await res.json()
+        except ClientResponseError:
+            return None
 
     async def remove(self, prefix: str, **args):
-        async with self._session.delete(self._url + prefix, params=args) as res:
-            return await res.json()
+        try:
+            async with self._session.delete(self._url + prefix, params=args) as res:
+                res.raise_for_status()
+                return await res.json()
+        except ClientResponseError:
+            return None
 
     async def read(self, prefix: str, **kwargs):
-        async with self._session.get(self._url + prefix, params=kwargs) as res:
-            return await res.json()
+        try:
+            async with self._session.get(self._url + prefix, params=kwargs) as res:
+                res.raise_for_status()
+                return await res.json()
+        except ClientResponseError:
+            return None
 
     async def update(self, prefix: str, **kwargs):
-        async with self._session.patch(self._url + prefix, json=kwargs) as res:
-            return await res.json()
+        try:
+            async with self._session.patch(self._url + prefix, json=kwargs) as res:
+                res.raise_for_status()
+                return await res.json()
+        except ClientResponseError:
+            return None
 
     async def connect(self):
         if not self._session:

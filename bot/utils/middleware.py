@@ -21,28 +21,29 @@ class InCachePageMiddleware(BaseMiddleware):
                    '<<': callback_data.offset - limit if callback_data.offset >= limit else 0}
 
         offset = offsets.get(callback_data.act, callback_data.offset)
-
+        log.debug("limit %s, offset %s", limit, offset)
         # Если ещё не делался запрос в базу - то значение pages None
         # Если запрос делался, но вернул пустой ответ - то pages инициализируется пустым словарём
         if pages is None:
             log.debug('в кэше нет страниц(pages None)')
             pages = {}
-            to_update = await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset)
+            to_update = await ext_api_manager.read(prefix='todo', doer_id=event.from_user.id, limit=limit, offset=offset)
             log.debug("to_update %s", to_update)
             if to_update is None:
                 to_update = []
             pages.update({offset: to_update})
             if not to_update:
                 log.error('список заданий пуст')
+            await state.update_data(pages=pages)
         # Если словарь со страницами есть, но текущей страницы там нет
         elif str(offset) not in pages.keys():
             log.debug('страницы со смещением %s нет в кэше', offset)
-            to_update = list(await ext_api_manager.read(prefix='todo', ident='doer_id', ident_val=event.from_user.id, limit=limit, offset=offset))
+            to_update = await ext_api_manager.read(prefix='todo', doer_id=event.from_user.id, limit=limit, offset=offset)
             if not to_update:
                 pages.update({offset: None})
             else:
                 pages.update({offset: to_update})
-        await state.update_data(pages=pages)
+            await state.update_data(pages=pages)
         result = await handler(event, data)
         return result
 
