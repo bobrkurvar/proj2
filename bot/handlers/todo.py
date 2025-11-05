@@ -11,8 +11,6 @@ from services.external import MyExternalApiForBot
 from bot.utils.handlers import to_date_dict
 from bot.filters.custom_filters import IsDate
 import logging
-import datetime
-
 
 router = Router()
 

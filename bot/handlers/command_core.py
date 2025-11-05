@@ -13,13 +13,11 @@ router = Router(name="command_core")
 
 @router.message(CommandStart())
 async def process_command_start(message: Message, ext_api_manager: MyExternalApiForBot, state: FSMContext):
-    user = {'id': message.from_user.id, 'username': message.from_user.username}
-    await ext_api_manager.create(prefix = 'user', **user)
+    await ext_api_manager.create(prefix = 'user', id=message.from_user.id, username=message.from_user.username)
     data = await state.get_data()
     msg = data.get('msg')
     buttons = ('list', 'create')
-    kb_data = dict(doer_id=message.from_user.id, limit=3, offset=0)
-    kb = get_inline_kb(*buttons, **kb_data)
+    kb = get_inline_kb(*buttons)
     if msg:
         try:
             await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
@@ -27,7 +25,7 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
             pass
     msg = (await message.answer(text=phrases.start, reply_markup=kb)).message_id
     data.update(msg=msg)
-    await state.clear()
+    await state.set_state(None)
     await state.update_data(data)
 
 @router.message(Command(commands=['help']))
@@ -35,8 +33,7 @@ async def process_delete_unknown(message: Message, state: FSMContext):
     buttons = ('START',)
     data = await state.get_data()
     msg = data.get('msg')
-    kb_data = dict(doer_id=message.from_user.id, limit=3, offset=0)
-    kb = get_inline_kb(*buttons, **kb_data)
+    kb = get_inline_kb(*buttons)
     if msg:
         try:
             await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
@@ -53,8 +50,7 @@ async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_a
             'last_name': callback.from_user.last_name}
     await ext_api_manager.create(prefix='user', **user)
     buttons = ('list', 'create')
-    kb_data = dict(doer_id=callback.from_user.id, limit=3, offset=0)
-    kb = get_inline_kb(*buttons, **kb_data)
+    kb = get_inline_kb(*buttons)
     msg = (await callback.message.edit_text(text=phrases.start, reply_markup=kb)).message_id
     await state.update_data(msg=msg)
 
@@ -62,8 +58,7 @@ async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_a
 async def process_press_button_menu(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     buttons = ('list', 'create')
-    kb_data = dict(limit=3, offset=0)
-    kb = get_inline_kb(*buttons, **kb_data)
+    kb = get_inline_kb(*buttons)
     msg = (await callback.message.edit_text(text=phrases.start, reply_markup=kb)).message_id
     data.update(msg=msg)
     await state.clear()

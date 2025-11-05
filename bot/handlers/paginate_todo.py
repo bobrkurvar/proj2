@@ -39,8 +39,7 @@ async def process_user_todo_list_button(callback: CallbackQuery, callback_data: 
 
     try:
         buttons = ['<<', 'EDIT', 'FILTER', 'DELETE', '>>', 'MENU'] if page else ('MENU',)
-        kb_data = dict(offset=offset, limit=limit, doer_id=callback.from_user.id,
-                       width=len(buttons) - 1 if len(buttons) > 1 else 1)
+        kb_data = dict(offset=offset, limit=limit, width=len(buttons) - 1 if len(buttons) > 1 else 1)
         kb = get_inline_kb(*buttons, **kb_data)
         msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
         await state.update_data(msg=msg)
