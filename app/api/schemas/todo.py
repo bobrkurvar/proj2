@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 from datetime import date
 
 class TodoInput(BaseModel):
@@ -12,7 +12,11 @@ class TodoOutput(BaseModel):
     name: str
     content: str
     doer_id: int
-    #deadline: dict | None = None
+    deadline: date
+
+    @field_serializer("deadline")
+    def serialize_deadline(self, v: date):
+        return {"year": v.year, "month": v.month, "day": v.day}
 
 class TodoUpdate(BaseModel):
     ident: str = 'id'

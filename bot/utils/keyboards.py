@@ -23,7 +23,7 @@ def get_inline_kb(*button_texts, width: int = 1, buttons_data_lst: list = None, 
                 data = {}
             data.setdefault("act", i)
             old_data = dict(button_data)
-            old_data.pop("id")
+            old_data.pop("id", None)
             data.update(**old_data)
             button = InlineKeyboardButton(
                 text=i, callback_data=CallbackFactoryTodo(**data).pack()

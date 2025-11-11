@@ -2,14 +2,15 @@ from aiogram import Router, F
 from aiogram.types import CallbackQuery, Message
 from aiogram.filters import StateFilter
 from bot.filters.callback_factory import CallbackFactoryTodo
-from aiogram.exceptions import TelegramBadRequest
 from aiogram.fsm.context import FSMContext
 from bot.utils.keyboards import get_inline_kb
 from bot.lexicon import phrases
 from bot.filters.states import FSMTodoFill, FSMTodoEdit, FSMSearch
 from services.external import MyExternalApiForBot
-from bot.utils.handlers import to_date_dict
+from bot.utils.funcs import to_date_dict, safety_delete_message
 from bot.filters.custom_filters import IsDate
+from services.celery_tasks import task1
+from datetime import date
 import logging
 
 
@@ -21,10 +22,7 @@ log = logging.getLogger(__name__)
 async def process_fill_task_name(message: Message, state: FSMContext):
     kb = get_inline_kb('MENU')
     msg = (await state.get_data()).get('msg')
-    try:
-        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
-    except TelegramBadRequest:
-        pass
+    await safety_delete_message(message.bot, message.chat.id, msg)
     msg = (await message.answer(text=phrases.fill_todo_content, reply_markup=kb)).message_id
     await state.update_data(msg=msg, name=message.text)
     await state.set_state(FSMTodoFill.fill_content)
@@ -34,10 +32,7 @@ async def process_fill_task_name(message: Message, state: FSMContext):
 async def process_fill_task_content(message: Message, state: FSMContext):
     kb = get_inline_kb('MENU')
     msg = (await state.get_data()).get('msg')
-    try:
-        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
-    except TelegramBadRequest:
-        pass
+    await safety_delete_message(message.bot, message.chat.id, msg)
     msg = (await message.answer(text=phrases.fill_todo_deadline, reply_markup=kb)).message_id
     await state.update_data(msg=msg, content=message.text)
     await state.set_state(FSMTodoFill.fill_deadline)
@@ -49,17 +44,16 @@ async def process_fill_task_deadline_success(message: Message, state: FSMContext
     kb_data = dict(doer_id=message.from_user.id)
     msg = data.get('msg')
     kb = get_inline_kb('MENU', **kb_data)
-    await ext_api_manager.create(
+    todo = await ext_api_manager.create(
         'todo',
         doer_id=message.from_user.id,
         deadline=deadline,
         content=data.pop('content'),
         name=data.pop('name')
     )
-    try:
-        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
-    except TelegramBadRequest:
-        pass
+    log.debug("name: %s deadline: %s", todo.get("name"), todo.get("deadline"))
+    task1.apply_async(args=(message.chat.id, todo.get("name"), todo.get("id")), countdown=5)
+    await safety_delete_message(message.bot, message.chat.id, msg)
     msg = (await message.answer(text=phrases.created_todo, reply_markup=kb)).message_id
     data.pop('pages')
     data.update(msg=msg)
@@ -70,10 +64,7 @@ async def process_fill_task_deadline_success(message: Message, state: FSMContext
 async def process_fill_task_deadline_fail(message: Message, state: FSMContext):
     msg = (await state.get_data()).get('msg')
     kb = get_inline_kb('MENU')
-    try:
-        await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
-    except TelegramBadRequest:
-        pass
+    await safety_delete_message(message.bot, message.chat.id, msg)
     msg = (await message.answer(text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
     await state.update_data(msg=msg)
 
@@ -110,16 +101,18 @@ async def process_edit_todo(message: Message, state: FSMContext, ext_api_manager
     pages = state_data.get('pages')
     pages.pop(str(offset))
     msg = (await state.get_data()).get('msg')
-    msg = (await message.bot.edit_message_text(chat_id=message.chat.id, message_id=msg, text=phrases.start, reply_markup=kb)).message_id
+    await safety_delete_message(message.bot, message.chat.id, msg)
+    msg = (await message.answer(text=phrases.start, reply_markup=kb)).message_id
     state_data.update(msg=msg, pages=pages)
-    await state.clear()
-    await state.update_data(state_data)
+    await state.set_state(None)
+    await state.set_data(state_data)
 
 @router.message(StateFilter(FSMTodoEdit.edit_date))
 async def process_fail_edit_deadline(message: Message, state: FSMContext):
     msg = (await state.get_data()).get('msg')
     kb = get_inline_kb('MENU')
-    msg = (await message.bot.edit_message_text(message_id=msg, chat_id=message.chat.id, text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
+    await safety_delete_message(message.bot, message.chat.id, msg)
+    msg = (await message.answer(text=phrases.fail_fill_deadline, reply_markup=kb)).message_id
     await state.update_data(msg=msg)
 
 @router.callback_query(StateFilter(FSMSearch.filter), CallbackFactoryTodo.filter(F.act.lower().in_({'name', 'content', 'deadline'})))
@@ -133,8 +126,8 @@ async def handle_select_param(callback: CallbackQuery, callback_data: CallbackFa
         kb = get_inline_kb('menu')
         msg = (await callback.message.edit_text(text=text, reply_markup=kb)).message_id
         data.update(msg=msg)
-    await state.clear()
-    await state.update_data(data)
+    await state.set_state(None)
+    await state.set_data(data)
 
 
 

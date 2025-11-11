@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from services.external import MyExternalApiForBot
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.utils.keyboards import get_inline_kb
-from aiogram.exceptions import TelegramBadRequest
+from bot.utils.funcs import safety_delete_message
 
 
 router = Router(name="command_core")
@@ -19,10 +19,7 @@ async def process_command_start(message: Message, ext_api_manager: MyExternalApi
     buttons = ('list', 'create')
     kb = get_inline_kb(*buttons)
     if msg:
-        try:
-            await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
-        except TelegramBadRequest:
-            pass
+        await safety_delete_message(message.bot, message.chat.id, msg)
     msg = (await message.answer(text=phrases.start, reply_markup=kb)).message_id
     data.update(msg=msg)
     await state.set_state(None)
@@ -35,14 +32,11 @@ async def process_delete_unknown(message: Message, state: FSMContext):
     msg = data.get('msg')
     kb = get_inline_kb(*buttons)
     if msg:
-        try:
-            await message.bot.delete_message(chat_id=message.chat.id, message_id=msg)
-        except TelegramBadRequest:
-            pass
+        await safety_delete_message(message.bot, message.chat.id, msg)
     msg = (await message.answer(text=phrases.start, reply_markup=kb)).message_id
     data.update(msg=msg)
-    await state.clear()
-    await state.update_data(data)
+    await state.set_state(None)
+    await state.set_data(data)
 
 @router.callback_query(CallbackFactoryTodo.filter(F.act.lower()=='start'))
 async def process_button_start(callback: CallbackQuery, state: FSMContext, ext_api_manager: MyExternalApiForBot):
@@ -61,5 +55,5 @@ async def process_press_button_menu(callback: CallbackQuery, state: FSMContext):
     kb = get_inline_kb(*buttons)
     msg = (await callback.message.edit_text(text=phrases.start, reply_markup=kb)).message_id
     data.update(msg=msg)
-    await state.clear()
-    await state.update_data(data)
+    await state.set_state(None)
+    await state.set_data(data)

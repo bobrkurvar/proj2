@@ -24,6 +24,7 @@ def add_exception_handler(cls):
 
 @add_exception_handler
 class MyExternalApiForBot:
+
     def __init__(self, url):
         self._url = url
         self._session = None
@@ -31,7 +32,9 @@ class MyExternalApiForBot:
 
     async def create(self, prefix: str, **data):
         try:
-            async with self._session.post(self._url+ prefix, json = data) as res:
+            url = self._url + prefix
+            async with self._session.post(url, json = data) as res:
+                log.info("res: %s", res)
                 res.raise_for_status()
                 return await res.json()
         except ClientResponseError:
@@ -62,8 +65,10 @@ class MyExternalApiForBot:
             return None
 
     async def connect(self):
+        log.info("connect to external")
         if not self._session:
             self._session = ClientSession()
+            log.debug("сессия создана")
 
     async def close(self):
         if self._session:

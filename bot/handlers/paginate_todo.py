@@ -4,7 +4,6 @@ from aiogram.types import CallbackQuery
 from aiogram.filters import StateFilter
 from aiogram.fsm.state import default_state
 from aiogram.exceptions import TelegramBadRequest
-from bot.utils.middleware import InCachePageMiddleware
 from bot.utils.keyboards import get_inline_kb
 from bot.filters.callback_factory import CallbackFactoryTodo
 from bot.lexicon import phrases
