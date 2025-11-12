@@ -1,12 +1,14 @@
-from celery import Celery, signals
-from . import MyExternalApiForBot
-from bot.utils.keyboards import get_inline_kb
 import asyncio
-from core import conf
 import ssl
 
+from celery import Celery, signals
 
-app = Celery('celery_tasks', broker="redis://localhost:6379/0")
+from bot.utils.keyboards import get_inline_kb
+from core import conf
+
+from . import MyExternalApiForBot
+
+app = Celery("celery_tasks", broker="redis://localhost:6379/0")
 BASE_URL = f"https://api.telegram.org/bot{conf.bot_token}"
 
 loop = asyncio.new_event_loop()
@@ -18,17 +20,21 @@ ssl_context.verify_mode = ssl.CERT_NONE
 
 ext_api_manager = MyExternalApiForBot(BASE_URL)
 
+
 @signals.worker_init.connect
-def connect_ext_api_manager():
+def connect_ext_api_manager(**kwargs):
     loop.run_until_complete(ext_api_manager.connect())
 
+
 @signals.worker_shutdown.connect
-def close_ext_api_manager():
+def close_ext_api_manager(**kwargs):
     loop.run_until_complete(ext_api_manager.close())
+
 
 @app.task
 def task1(chat_id: int, name: str, task_id: int):
     loop.run_until_complete(_task1(chat_id, name, task_id))
+
 
 def kb_to_dict(kb) -> dict:
     return {
@@ -38,14 +44,15 @@ def kb_to_dict(kb) -> dict:
         ]
     }
 
+
 async def _task1(chat_id: int, name: str, task_id: int):
     kb = get_inline_kb("menu", "delete", buttons_data_lst=[{"id": task_id}])
     payload = {
         "chat_id": chat_id,
         "text": f"Дедлайн задачи {name} истёк",
-        "reply_markup": kb_to_dict(kb)
+        "reply_markup": kb_to_dict(kb),
     }
-    await ext_api_manager.create(prefix="/sendMessage", my_server = False, **payload)
+    await ext_api_manager.create(prefix="/sendMessage", my_server=False, **payload)
     # async with ClientSession() as session:
     #     async with session.post(BASE_URL+"/sendMessage", json=payload, ssl=ssl_context):
     #         pass

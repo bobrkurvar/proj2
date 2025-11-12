@@ -1,21 +1,30 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+
 from app.api.endpoints import main_router
 from app.exceptions.handlers import (
-    not_found_in_db_exceptions_handler,
-    global_exception_handler,
-    entity_already_exists_in_db_exceptions_handler,
     data_base_exception_handler,
-    foreign_key_violation_exceptions_handler
+    entity_already_exists_in_db_exceptions_handler,
+    foreign_key_violation_exceptions_handler,
+    global_exception_handler,
+    not_found_in_db_exceptions_handler,
 )
-from db.exceptions import NotFoundError, AlreadyExistsError, DatabaseError, CustomForeignKeyViolationError
-from contextlib import asynccontextmanager
-from db import get_db_manager
+from app.repo import get_db_manager
+from app.repo.exceptions import (
+    AlreadyExistsError,
+    CustomForeignKeyViolationError,
+    DatabaseError,
+    NotFoundError,
+)
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     yield
     manager = get_db_manager()
     manager.close_and_dispose()
+
 
 app = FastAPI(lifespan=lifespan)
 

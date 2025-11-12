@@ -1,11 +1,16 @@
-from aiogram.utils.keyboard import InlineKeyboardBuilder
-from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
-from bot.filters.callback_factory import CallbackFactoryTodo
 import logging
+
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+from bot.filters.callback_factory import CallbackFactoryTodo
 
 log = logging.getLogger(__name__)
 
-def get_inline_kb(*button_texts, width: int = 1, buttons_data_lst: list = None, **button_data) -> InlineKeyboardMarkup:
+
+def get_inline_kb(
+    *button_texts, width: int = 1, buttons_data_lst: list = None, **button_data
+) -> InlineKeyboardMarkup:
     kb_builder = InlineKeyboardBuilder()
     buttons: list[InlineKeyboardButton] = []
     log.debug("ids: %s", buttons_data_lst)

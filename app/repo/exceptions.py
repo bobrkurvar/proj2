@@ -1,4 +1,3 @@
-
 class RepositoryError(Exception):
     """Базовое исключение репозитория"""
 
@@ -47,4 +46,3 @@ class CustomForeignKeyViolationError(RepositoryError):
 
 class DatabaseError(RepositoryError):
     pass
-

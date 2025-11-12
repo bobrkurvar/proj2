@@ -1,9 +1,11 @@
-from aiohttp import ClientSession, ClientResponseError
-from aiohttp.client_exceptions import ClientConnectorError
 import logging
 from functools import wraps
 
+from aiohttp import ClientResponseError, ClientSession
+from aiohttp.client_exceptions import ClientConnectorError
+
 log = logging.getLogger(__name__)
+
 
 def handle_ext_api(func):
     @wraps(func)
@@ -11,8 +13,10 @@ def handle_ext_api(func):
         try:
             return await func(self, *args, **kwargs)
         except ClientConnectorError:
-            log.warning('поключение не установлено')
+            log.warning("поключение не установлено")
+
     return wrapper
+
 
 def add_exception_handler(cls):
     api_methods = {"create", "remove", "read", "update"}
@@ -22,6 +26,7 @@ def add_exception_handler(cls):
             setattr(cls, name, handle_ext_api(method))
     return cls
 
+
 @add_exception_handler
 class MyExternalApiForBot:
 
@@ -29,11 +34,10 @@ class MyExternalApiForBot:
         self._url = url
         self._session = None
 
-
     async def create(self, prefix: str, **data):
         try:
             url = self._url + prefix
-            async with self._session.post(url, json = data) as res:
+            async with self._session.post(url, json=data) as res:
                 log.info("res: %s", res)
                 res.raise_for_status()
                 return await res.json()
@@ -72,7 +76,6 @@ class MyExternalApiForBot:
 
     async def close(self):
         if self._session:
-            log.warning(f'закрываю сессию {self.__class__.__name__}')
+            log.warning(f"закрываю сессию {self.__class__.__name__}")
             await self._session.close()
             self._session = None
-

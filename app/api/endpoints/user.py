@@ -1,105 +1,121 @@
-from fastapi import APIRouter, status, HTTPException, Depends
-from app.api.schemas.user import UserInput, UserOutput, UserDelete
-from app.exceptions.schemas import ErrorResponse
-from db.models import User
-from db import get_db_manager, Crud
-from typing import List, Annotated
 import logging
+from typing import Annotated, List
 
-router = APIRouter(tags=['Users'])
+from fastapi import APIRouter, Depends, HTTPException, status
+
+from app.api.schemas.user import UserDelete, UserInput, UserOutput
+from app.exceptions.schemas import ErrorResponse
+
+# from db.models import User
+from app.domain.user import User
+from app.repo import Crud, get_db_manager
+
+router = APIRouter(tags=["Users"])
 log = logging.getLogger(__name__)
 dbManagerDep = Annotated[Crud, Depends(get_db_manager)]
 
-@router.post('',
-             summary='создание пользователя',
-             status_code=status.HTTP_201_CREATED,
-             response_model=UserOutput,
-             responses={
-                 status.HTTP_409_CONFLICT: {
-                     'detail': 'Пользователь с таким id уже существует',
-                     'model': ErrorResponse
-                 }
-             }
+
+@router.post(
+    "",
+    summary="создание пользователя",
+    status_code=status.HTTP_201_CREATED,
+    response_model=UserOutput,
+    responses={
+        status.HTTP_409_CONFLICT: {
+            "detail": "Пользователь с таким id уже существует",
+            "model": ErrorResponse,
+        }
+    },
 )
 async def crete_user(user: UserInput, manager: dbManagerDep):
-    log.debug('запрос на создание пользователя: %s', user.id)
+    log.debug("запрос на создание пользователя: %s", user.id)
     user = await manager.create(User, **user.model_dump())
-    log.info('пользователь: %s создан', user.get('id'))
+    log.info("пользователь: %s создан", user.get("id"))
     return user
 
-@router.get('',
-            summary='список пользователей',
-            status_code=status.HTTP_200_OK,
-            response_model=List[UserOutput],
-            responses={
-                status.HTTP_404_NOT_FOUND: {
-                    'detail': 'Список пользователей пуст или данный пользователь не найден',
-                    'model': ErrorResponse
-                }
-            }
+
+@router.get(
+    "",
+    summary="список пользователей",
+    status_code=status.HTTP_200_OK,
+    response_model=List[UserOutput],
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "detail": "Список пользователей пуст или данный пользователь не найден",
+            "model": ErrorResponse,
+        }
+    },
 )
-async def read_user_by_criteria(manager: dbManagerDep, username: str | None = None, activity: bool | None = None):
+async def read_user_by_criteria(
+    manager: dbManagerDep, username: str | None = None, activity: bool | None = None
+):
     user = None
     if (username is None) and (activity is None):
-        log.debug('запрос на чтение всех пользователей')
+        log.debug("запрос на чтение всех пользователей")
         user = await manager.read(User)
     else:
         if not (username is None):
-            log.debug('запрос на чтение пользователя с username: %s', username)
-            user = await manager.read(model=User, ident='username', ident_val=username)
+            log.debug("запрос на чтение пользователя с username: %s", username)
+            user = await manager.read(
+                domain_model=User, ident="username", ident_val=username
+            )
         elif not (activity is None):
-            log.debug('запрос на чтение пользователя с активностью: %s', activity)
-            user = await manager.read(model=User, ident='activity', ident_val=activity)
+            log.debug("запрос на чтение пользователя с активностью: %s", activity)
+            user = await manager.read(
+                domain_model=User, ident="activity", ident_val=activity
+            )
     return user
 
-@router.delete('{user_id}',
-            summary='Удаление пользователя по id',
-            status_code=status.HTTP_200_OK,
-            response_model=UserOutput,
-            responses={
-                status.HTTP_404_NOT_FOUND: {
-                    'detail': 'Пользователь не найден',
-                    'model': ErrorResponse
-                }
-            }
+
+@router.delete(
+    "{user_id}",
+    summary="Удаление пользователя по id",
+    status_code=status.HTTP_200_OK,
+    response_model=UserOutput,
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "detail": "Пользователь не найден",
+            "model": ErrorResponse,
+        }
+    },
 )
 async def delete_by_id(user_id: int, manager: dbManagerDep):
-    log.debug('запрос на удаление пользователя: %s', user_id)
-    user = await manager.delete(User, user_id)
+    log.debug("запрос на удаление пользователя: %s", user_id)
+    user = await manager.delete(User, ident_val=user_id)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail='Пользователь для удаления не найден'
+            detail="Пользователь для удаления не найден",
         )
     return user
 
-@router.delete('',
-               summary='Удаление пользователей по критериям',
-               responses={
-                   status.HTTP_404_NOT_FOUND: {
-                       'detail': 'Пользователи не найдены',
-                       'model': ErrorResponse
-                   },
-                   status.HTTP_204_NO_CONTENT: {
-                       'detail': 'Пользователи удалены'
-                   }
-               }
+
+@router.delete(
+    "",
+    summary="Удаление пользователей по критериям",
+    responses={
+        status.HTTP_404_NOT_FOUND: {
+            "detail": "Пользователи не найдены",
+            "model": ErrorResponse,
+        },
+        status.HTTP_204_NO_CONTENT: {"detail": "Пользователи удалены"},
+    },
 )
 async def delete_by_criteria(user: UserDelete, manager: dbManagerDep):
     if not (user.username is None):
-        log.debug('Запрос на удаление пользователя по критерию %s с значением %s', 'username', user.username)
-        await manager.delete(User, ident='username', ident_val=user.username)
+        log.debug(
+            "Запрос на удаление пользователя по критерию %s с значением %s",
+            "username",
+            user.username,
+        )
+        await manager.delete(User, ident="username", ident_val=user.username)
     elif not (user.activity is None):
-        log.debug('Запрос на удаление пользователя по критерию %s с значением %s', 'activity', user.activity)
-        await manager.delete(User, ident='activity', ident_val=user.activity)
+        log.debug(
+            "Запрос на удаление пользователя по критерию %s с значением %s",
+            "activity",
+            user.activity,
+        )
+        await manager.delete(User, ident="activity", ident_val=user.activity)
     else:
-        log.debug('Запрос на удаление всех пользователей')
+        log.debug("Запрос на удаление всех пользователей")
         await manager.delete(User)
-    # return Response(
-    #     status_code=status.HTTP_204_NO_CONTENT
-    # )
-
-
-
-
-

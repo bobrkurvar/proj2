@@ -3,7 +3,7 @@ import logging
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
-from db.exceptions import (
+from app.repo.exceptions import (
     AlreadyExistsError,
     CustomForeignKeyViolationError,
     DatabaseError,
@@ -47,6 +47,7 @@ def data_base_exception_handler(request: Request, exc: DatabaseError):
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={"code": status.HTTP_500_INTERNAL_SERVER_ERROR, "detail": str(exc)},
     )
+
 
 def global_exception_handler(request: Request, exc: Exception):
     log.exception("Глобальная ошибка")
