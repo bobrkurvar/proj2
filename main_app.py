@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.api.endpoints import main_router
-from app.exceptions.handlers import (
+from app.err_handlers import (
     data_base_exception_handler,
     entity_already_exists_in_db_exceptions_handler,
     foreign_key_violation_exceptions_handler,

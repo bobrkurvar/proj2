@@ -3,7 +3,7 @@ import logging
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
-from app.repo.exceptions import (
+from app.domain.exceptions import (
     AlreadyExistsError,
     CustomForeignKeyViolationError,
     DatabaseError,
