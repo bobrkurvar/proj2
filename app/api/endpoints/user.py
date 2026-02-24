@@ -3,14 +3,24 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
-from app.api.schemas.user import UserDelete, UserInput
+from app.api.dto import UserDelete, UserInput
 
-from app.domain.user import User
+from app.domain import User, Task
 from app.adapters.crud import Crud, get_db_manager
 
-router = APIRouter(tags=["Users"])
+router = APIRouter(tags=["Users"], prefix="users")
 log = logging.getLogger(__name__)
 dbManagerDep = Annotated[Crud, Depends(get_db_manager)]
+
+
+@router.get("/{owner_id}/own-tasks")
+async def read_users_own_tasks(owner_id: int, manager: dbManagerDep):
+    return await manager.read(Task, owner_id=owner_id)
+
+
+@router.get("/{user_id}/tasks")
+async def read_users_tasks(user_id: int, manager: dbManagerDep):
+    return await manager.read(Task, to_join=["task_executors"], user_id=user_id)
 
 
 @router.post("")

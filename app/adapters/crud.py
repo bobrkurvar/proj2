@@ -6,9 +6,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import selectinload
 
-from app.domain.exceptions import (AlreadyExistsError,
-                                          CustomForeignKeyViolationError,
-                                          NotFoundError)
+from app.domain.exceptions import (
+    AlreadyExistsError,
+    CustomForeignKeyViolationError,
+    NotFoundError,
+)
 from core import conf
 
 log = logging.getLogger(__name__)
@@ -153,7 +155,9 @@ class Crud:
         **filters
     ):
         if not read_null_values:
-            filters = {key: value for key, value in filters.items() if value is not None}
+            filters = {
+                key: value for key, value in filters.items() if value is not None
+            }
 
         async def _read_internal(session):
             model = self._mapper[domain_model]
@@ -201,6 +205,7 @@ class Crud:
 
 
 db_manager: Crud | None = None
+
 
 def get_db_manager() -> Crud:
     db_url = conf.db_url

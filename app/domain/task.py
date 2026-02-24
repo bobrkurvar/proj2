@@ -15,10 +15,8 @@ class Task:
         self.date_of_creation = datetime.today()
         self.deadline = deadline
 
+
 class RequestsToExecutor:
     def __init__(self, task_id: int, user_id: int):
         self.task_id = task_id
         self.user_id = user_id
-
-
-
