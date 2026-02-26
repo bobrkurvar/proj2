@@ -1,49 +1,52 @@
-from fastapi import APIRouter, status, Depends
-from app.api.schemas.user import UserInputFromBot
-from app.exceptions.custom_errors import CustomDbException
-from db import get_db_manager, Crud
-from typing import Annotated
-from db.models import User
-from sqlalchemy.exc import IntegrityError
 import logging
+from typing import Annotated
 
-router = APIRouter(tags=['Users'])
+from fastapi import APIRouter, Depends
+
+from app.api.dto import UserDelete, UserInput
+
+from app.domain import User, Task
+from app.adapters.crud import Crud, get_db_manager
+
+router = APIRouter(tags=["Users"], prefix="users")
 log = logging.getLogger(__name__)
-
-DbManagerDep = Annotated[Crud, Depends(get_db_manager)]
-
-@router.post('', summary='создание пользователя', status_code=status.HTTP_201_CREATED)
-async def crete_user(user: UserInputFromBot, manager: DbManagerDep):
-    log.debug('запрос на создание пользователя: %s', user.id)
-    try:
-        await manager.create(User, **user.model_dump())
-    except IntegrityError:
-        raise CustomDbException(message='ошибка целостности бд', detail='пользователь с данным id уже существует', status_code=status.HTTP_200_OK)
-    return dict(first_name=user.first_name, last_name=user.last_name)
-
-@router.get('/{ident}', summary='получение пользователя',status_code=status.HTTP_200_OK)
-async def read_user(ident: int, manager: DbManagerDep):
-    log.debug('запрос на чтение пользователя %s', ident)
-    res = await manager.read(model=User, ident='id', ident_val=ident)
-    if res is None:
-        raise CustomDbException(message='пользователь не найден', detail='пользователь не найден', status_code=status.HTTP_404_NOT_FOUND)
-    return res
-
-@router.get('', summary='список пользователей',status_code=status.HTTP_200_OK)
-async def read_user(manager: DbManagerDep):
-    log.debug('запрос на чтение всех пользователей')
-    res = await manager.read(User)
-    if res is None:
-        raise CustomDbException(message='пользователь не найден', detail='пользователь не найден', status_code=status.HTTP_404_NOT_FOUND)
-    return res
-
-@router.delete('/{ident}', summary='удаление пользователя',status_code=status.HTTP_200_OK)
-async def delete_from_bot(ident:int, manager: DbManagerDep):
-    log.debug('запрос на удаление пользователя: %s', ident)
-    await manager.delete(User, ident)
-    return {'msg': f"пользователь {ident} удалён"}
+dbManagerDep = Annotated[Crud, Depends(get_db_manager)]
 
 
+@router.get("/{owner_id}/own-tasks")
+async def read_users_own_tasks(owner_id: int, manager: dbManagerDep):
+    return await manager.read(Task, owner_id=owner_id)
 
 
+@router.get("/{user_id}/tasks")
+async def read_users_tasks(user_id: int, manager: dbManagerDep):
+    return await manager.read(Task, to_join=["task_executors"], user_id=user_id)
 
+
+@router.post("")
+async def crete_user(user: UserInput, manager: dbManagerDep):
+    log.debug("запрос на создание пользователя: %s", user.id)
+    user = await manager.create(User, **user.model_dump())
+    log.debug("пользователь: %s создан", user.get("id"))
+    return user
+
+
+@router.get("")
+async def read_user_by_criteria(
+    manager: dbManagerDep, username: str | None = None, activity: bool | None = None
+):
+    filters = locals()
+    filters.pop("manager")
+    return await manager.read(User, **filters)
+
+
+@router.delete("/{user_id}")
+async def delete_by_id(user_id: int, manager: dbManagerDep):
+    log.debug("запрос на удаление пользователя: %s", user_id)
+    return await manager.delete(User, ident_val=user_id)
+
+
+@router.delete("")
+async def delete_by_criteria(user: UserDelete, manager: dbManagerDep):
+    filters = user.model_dump()
+    await manager.delete(User, **filters)
