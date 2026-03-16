@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Body
 from app.api.dto import TaskInput
 from app.domain.task import Task
 from app.adapters.crud import Crud, get_db_manager
-from app.services.tasks import make_request, accept_request, create_task
+from app.services.tasks import make_request, response_to_request, create_task
 
 router = APIRouter(tags=["Todo"], prefix="tasks")
 log = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ async def delete_request(
     owner_request: Annotated[bool, Body],
     manager: dbManagerDep,
 ):
-    await accept_request(
+    await response_to_request(
         manager=manager, task_id=task_id, user_id=user_id, owner_request=owner_request
     )
 
@@ -60,7 +60,7 @@ async def delete_request(
     owner_request: Annotated[bool, Body],
     manager: dbManagerDep,
 ):
-    await accept_request(
+    await response_to_request(
         manager=manager,
         accept=False,
         task_id=task_id,
@@ -73,3 +73,5 @@ async def delete_request(
 async def delete_task_by_id(task_id: int, manager: dbManagerDep):
     todo = await manager.delete(domain_model=Task, task_id=task_id)
     return todo
+
+

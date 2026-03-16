@@ -17,10 +17,10 @@ async def make_request(
             owner_request=owner_request,
         )
     except AlreadyExistsError:
-        return await accept_request(manager, user_id, task_id, owner_request)
+        return await response_to_request(manager, user_id, task_id, owner_request)
 
 
-async def accept_request(
+async def response_to_request(
     manager,
     user_id: int,
     task_id: int,

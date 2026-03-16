@@ -46,10 +46,10 @@ class Crud:
         async def _create_internal(session):
             if seq_data:
                 log.debug("создание нескольких объектов")
-                objs = [model(**data) for data in seq_data]
+                objs = tuple(model(**data) for data in seq_data)
                 session.add_all(objs)
                 await session.flush()
-                return [obj.model_dump() for obj in objs]
+                return tuple(obj.model_dump() for obj in objs)
             else:
                 log.debug(
                     "%s: параметры для создания %s",
@@ -102,20 +102,20 @@ class Crud:
 
             delete_query = delete(model).where(*conditions).returning(model)
 
-            result = await session.execute(delete_query)
-            deleted_records = result.scalars().all()
+            result = (await session.execute(delete_query)).scalars()
+            #deleted_records = result.scalars().all()
 
             if not deleted_records:
                 raise NotFoundError(model.__name__, str(filters))
 
-            log.debug(
-                "Удалено %d записей из %s с фильтрами: %s",
-                len(deleted_records),
-                model.__name__,
-                filters,
-            )
+            # log.debug(
+            #     "Удалено %d записей из %s с фильтрами: %s",
+            #     len(deleted_records),
+            #     model.__name__,
+            #     filters,
+            # )
 
-            return [record.model_dump() for record in result]
+            return tuple(record.model_dump() for record in result)
 
         if session is not None:
             return await _delete_internal(session)
@@ -194,8 +194,8 @@ class Crud:
             if limit:
                 query = query.limit(limit)
 
-            result = (await session.execute(query)).unique().scalars().all()
-            return [r.model_dump() for r in result]
+            result = (await session.execute(query)).scalars()
+            return tuple(r.model_dump() for r in result)
 
         if session is not None:
             return await _read_internal(session)
