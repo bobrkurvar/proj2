@@ -25,7 +25,7 @@ class UserInput(BaseModel):
 
 
 class UserDelete(BaseModel):
-    activity: bool | None = None
+    #activity: bool | None = None
     username: str | None = None
 
 

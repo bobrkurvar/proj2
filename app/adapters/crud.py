@@ -218,7 +218,9 @@ def get_db_manager(test=False) -> Crud:
     db_host = conf.db_url if not test else conf.test_db_url
     domain_with_orm = {
         domain.User: db.User,
-        domain.Task: db.Task
+        domain.Task: db.Task,
+        domain.TaskExecutors: db.TaskExecutors,
+        domain.RequestsToExecutor: db.RequestsToExecutor
     }
     global _db_manager
     if _db_manager is None:

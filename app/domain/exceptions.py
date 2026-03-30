@@ -2,7 +2,6 @@ from .user import User
 
 class RepositoryError(Exception):
     """Базовое исключение репозитория"""
-
     pass
 
 
@@ -83,3 +82,9 @@ class CredentialsValidateError(UnauthorizedError):
 class UserLoginNotFoundError(NotFoundError):
     def __init__(self, username: str):
         super().__init__(User, username=username)
+
+
+class TaskNotFoundError(Exception):
+    def __init__(self, task_id: int):
+        self.task_id = task_id
+        super().__init__(f"Not exists task with id {self.task_id}")
