@@ -1,5 +1,4 @@
-from enum import Enum
-
+from .user import User
 
 class RepositoryError(Exception):
     """Базовое исключение репозитория"""
@@ -10,12 +9,11 @@ class RepositoryError(Exception):
 class NotFoundError(RepositoryError):
     """Не найдена запись в базе"""
 
-    def __init__(self, entity_name, ident: str | None = None, ident_val=None):
+    def __init__(self, entity_name, **filters):
         self.entity_name = entity_name
-        self.ident = ident
-        self.ident_val = ident_val
-        if ident and ident_val:
-            super().__init__(f"{entity_name} with {ident} = {ident_val} not found")
+        self.filters = filters
+        if filters:
+            super().__init__(f"{entity_name} with {filters}")
         else:
             super().__init__(f"{entity_name} not found")
 
@@ -29,7 +27,7 @@ class AlreadyExistsError(RepositoryError):
         super().__init__(f"{model_name} already exists (constraint: {constraint})")
 
 
-class CustomForeignKeyViolationError(RepositoryError):
+class ForeignKeyViolationError(RepositoryError):
     """Ошибка внешнего ключа"""
 
     def __init__(self, model_name: str, detail: str):
@@ -38,42 +36,50 @@ class CustomForeignKeyViolationError(RepositoryError):
         super().__init__(f"Foreign key violation in {model_name}: {detail}")
 
 
-class AuthErrors(Enum):
-    validate = "validate error"
-    refresh = "refresh token error"
-    access = "access token error"
-    unexpected = "unexpected error"
-
-
 class UnauthorizedError(Exception):
-    """Ошибка внешнего ключа"""
-
-    """
-    Исключение, которое будет возбуждено вследствие
-    попытке доступа к защищённому ресурсу без аутентификации
-    """
-
-    def __init__(
-        self,
-        validate: bool = None,
-        refresh_token: bool = None,
-        access_token: bool | None = None,
-    ):
-        self.headers = {"WWW-Authenticate": "Bearer"}
-        if validate:
-            self.error = AuthErrors.validate
-            self.detail = (
-                f"Попытка не аутентифицированного доступа, не валидные учётные данные"
-            )
-        elif refresh_token:
-            self.error = AuthErrors.refresh
-            self.detail = (
-                f"Попытка не аутентифицированного доступа, refresh token истёк"
-            )
-        elif access_token:
-            self.error = AuthErrors.access
-            self.detail = f"Попытка не аутентифицированного доступа, access token истёк"
-        else:
-            self.error = AuthErrors.unexpected
-            self.detail = f"Попытка не аутентифицированного доступа"
+    def __init__(self, detail: str):
+        self.detail = detail
         super().__init__(self.detail)
+
+
+class InvalidTokenError(UnauthorizedError):
+    def __init__(self, token_type: str):
+        self.detail = f"Неправильный {token_type} token"
+        super().__init__(self.detail)
+
+
+class InvalidAccessTokenError(InvalidTokenError):
+    def __init__(self):
+        super().__init__("access")
+
+
+class InvalidRefreshTokenError(InvalidTokenError):
+    def __init__(self):
+        super().__init__("refresh")
+
+
+class TokenExpireError(UnauthorizedError):
+    def __init__(self, token_type: str):
+        self.detail = f"Время жизни {token_type} token истекло"
+        super().__init__(self.detail)
+
+
+class AccessTokenNotExistsError(TokenExpireError):
+    def __init__(self):
+        super().__init__("access")
+
+
+class RefreshTokenNotExistsError(TokenExpireError):
+    def __init__(self):
+        super().__init__("refresh")
+
+
+class CredentialsValidateError(UnauthorizedError):
+    def __init__(self):
+        self.detail = "Не правильные учётные данные"
+        super().__init__(self.detail)
+
+
+class UserLoginNotFoundError(NotFoundError):
+    def __init__(self, username: str):
+        super().__init__(User, username=username)

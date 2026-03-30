@@ -1,26 +1,26 @@
 import logging
+from collections.abc import Collection
+from typing import Any
 
-from app import domain, db_models
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 
-from app.domain.exceptions import (
-    AlreadyExistsError,
-    CustomForeignKeyViolationError,
-    NotFoundError,
-)
 from core import conf
+from app import db_models as db, domain
+from app.domain.exceptions import (AlreadyExistsError, ForeignKeyViolationError,
+                               NotFoundError)
 
 log = logging.getLogger(__name__)
 
 
 class Crud:
+
     def __init__(self, url, domain_with_orm: dict | None = None):
         self.url = url
         self._engine = None
-        self._session_factory = None
+        self._session_factory: async_sessionmaker | None = None
         self._mapper = domain_with_orm if domain_with_orm else {}
 
     def connect(self):
@@ -28,6 +28,12 @@ class Crud:
             self._engine = create_async_engine(self.url)
         if self._session_factory is None:
             self._session_factory = async_sessionmaker(self._engine)
+
+    @property
+    def session_factory(self) -> async_sessionmaker:
+        if self._session_factory is None:
+            raise RuntimeError("Not connected")
+        return self._session_factory
 
     async def close_and_dispose(self):
         log.debug("подключение к движку %s закрывается", self._engine)
@@ -40,15 +46,15 @@ class Crud:
 
     async def create(
         self, domain_model, seq_data: list | None = None, session=None, **kwargs
-    ):
+    ) -> tuple[dict, ...] | dict:
         model = self._mapper[domain_model]
 
-        async def _create_internal(session):
+        async def _create_internal(cur_session):
             if seq_data:
                 log.debug("создание нескольких объектов")
-                objs = tuple(model(**data) for data in seq_data)
-                session.add_all(objs)
-                await session.flush()
+                objs = [model(**data) for data in seq_data]
+                cur_session.add_all(objs)
+                await cur_session.flush()
                 return tuple(obj.model_dump() for obj in objs)
             else:
                 log.debug(
@@ -57,17 +63,16 @@ class Crud:
                     kwargs,
                 )
                 obj = model(**kwargs)
-                session.add(obj)
-                await session.flush()
+                cur_session.add(obj)
+                await cur_session.flush()
                 return obj.model_dump()
 
         try:
-
             if session is not None:
                 return await _create_internal(session)
 
             else:
-                async with self._session_factory.begin() as session_ctx:
+                async with self.session_factory.begin() as session_ctx:
                     return await _create_internal(session_ctx)
 
         except IntegrityError as err:
@@ -75,7 +80,7 @@ class Crud:
 
             if pgcode == "23505":
                 constraint_name = (
-                    getattr(err.orig.diag, "constraint_name", "unknown")
+                    getattr(err.orig.diag, "constraint_name", "unknown")  # type: ignore
                     if hasattr(err.orig, "diag")
                     else "unknown"
                 )
@@ -83,16 +88,16 @@ class Crud:
 
             elif pgcode == "23503":
                 detail = (
-                    getattr(err.orig.diag, "message_detail", str(err))
+                    getattr(err.orig.diag, "message_detail", str(err))  # type: ignore
                     if hasattr(err.orig, "diag")
                     else str(err)
-                )
-                raise CustomForeignKeyViolationError(model.__name__, detail)
+                )  # type: ignore
+                raise ForeignKeyViolationError(model.__name__, detail)
 
             raise
 
-    async def delete(self, domain_model, session=None, **filters):
-        async def _delete_internal(session):
+    async def delete(self, domain_model, session=None, **filters) -> tuple[dict, ...]:
+        async def _delete_internal(cur_session) -> tuple[dict, ...]:
             log.debug("%s filter for delete: %s", domain_model, filters)
             model = self._mapper[domain_model]
 
@@ -102,85 +107,87 @@ class Crud:
 
             delete_query = delete(model).where(*conditions).returning(model)
 
-            result = (await session.execute(delete_query)).scalars()
-            #deleted_records = result.scalars().all()
+            result = await cur_session.execute(delete_query)
+            deleted_records = result.scalars()
+            result = tuple(record.model_dump() for record in deleted_records)
+            if not result:
+                raise NotFoundError(model.__name__, **filters)
 
-            if not deleted_records:
-                raise NotFoundError(model.__name__, str(filters))
+            log.debug(
+                "Удалено %d записей из %s с фильтрами: %s",
+                len(result),
+                model.__name__,
+                filters,
+            )
 
-            # log.debug(
-            #     "Удалено %d записей из %s с фильтрами: %s",
-            #     len(deleted_records),
-            #     model.__name__,
-            #     filters,
-            # )
-
-            return tuple(record.model_dump() for record in result)
+            return result
 
         if session is not None:
             return await _delete_internal(session)
         else:
-            async with self._session_factory.begin() as session:
+            async with self.session_factory.begin() as session:
                 return await _delete_internal(session)
 
     async def update(self, domain_model, filters: dict, session=None, **values):
 
-        async def _update_internal(session):
+        async def _update_internal(cur_session):
             model = self._mapper[domain_model]
             query = update(model)
 
-            for field, value in filters.items():
-                query = query.where(getattr(model, field) == value)
+            conditions = [
+                getattr(model, field) == value for field, value in filters.items()
+            ]
+            query = query.where(*conditions)
 
             query = query.values(**values)
 
-            await session.execute(query)
+            await cur_session.execute(query)
 
         if session is not None:
             return await _update_internal(session)
         else:
-            async with self._session_factory.begin() as session:
+            async with self.session_factory.begin() as session:
                 return await _update_internal(session)
+
 
     async def read(
         self,
         domain_model,
+        *,
         session=None,
-        to_join=None,
+        loaded=None,
         limit: int | None = None,
         offset: int | None = None,
         order_by: str | None = None,
         distinct: str | None = None,
-        read_null_values: bool = False,
         **filters
-    ):
-        if not read_null_values:
-            filters = {
-                key: value for key, value in filters.items() if value is not None
-            }
+    ) -> tuple[dict, ...]:
 
-        async def _read_internal(session):
+        async def _read_internal(cur_session):
             model = self._mapper[domain_model]
-            options = []
-            if to_join:
 
-                join_attrs = set(to_join)
-                log.debug("to_join: %s", to_join)
-                for join_attr in join_attrs:
-                    if hasattr(model, join_attr):
-                        options.append(selectinload(getattr(model, join_attr)))
+            options = []
+
+            if loaded:
+                loaded_attrs = set(loaded)
+                for loaded_attr in loaded_attrs:
+                    if hasattr(model, loaded_attr):
+                        options.append(selectinload(getattr(model, loaded_attr)))
 
             query = select(model)
 
             if options:
                 query = query.options(*options)
 
+            conditions = []
             for field, value in filters.items():
-                column = getattr(model, field)
-                if read_null_values and value is None:
-                    query = query.where(column.is_(None))
+                attr = getattr(model, field)
+                if isinstance(value, Collection) and not isinstance(value, str):
+                    conditions.append(attr.in_(value))
                 else:
-                    query = query.where(column == value)
+                    conditions.append(attr == value)
+
+            query = query.where(*conditions)
 
             if distinct:
                 query = query.distinct(getattr(model, distinct))
@@ -193,27 +200,28 @@ class Crud:
 
             if limit:
                 query = query.limit(limit)
-
-            result = (await session.execute(query)).scalars()
+            result = (await cur_session.execute(query)).scalars()
             return tuple(r.model_dump() for r in result)
 
         if session is not None:
             return await _read_internal(session)
         else:
-            async with self._session_factory.begin() as session:
+            async with self.session_factory.begin() as session:
                 return await _read_internal(session)
 
 
-db_manager: Crud | None = None
+
+_db_manager: Crud | None = None
 
 
-def get_db_manager() -> Crud:
-    db_url = conf.db_url
+def get_db_manager(test=False) -> Crud:
+    db_host = conf.db_url if not test else conf.test_db_url
     domain_with_orm = {
-        domain.User: db_models.User,
-        domain.Task: db_models.Task,
+        domain.User: db.User,
+        domain.Task: db.Task
     }
-    global db_manager
-    if db_manager is None:
-        db_manager = Crud(db_url, domain_with_orm)
-    return db_manager
+    global _db_manager
+    if _db_manager is None:
+        _db_manager = Crud(db_host, domain_with_orm)
+
+    return _db_manager

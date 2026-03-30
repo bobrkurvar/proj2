@@ -63,7 +63,6 @@ class Task(Base):
 
 class TaskExecutors(Base):
     __tablename__ = "task_executors"
-
     task_id: Mapped[int] = mapped_column(ForeignKey("tasks.id"), primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     tasks: Mapped["Task"] = relationship("Task", back_populates="executors")

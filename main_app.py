@@ -10,20 +10,17 @@ from app.err_handlers import (
     global_exception_handler,
     not_found_in_db_exceptions_handler,
 )
-from app.repo import get_db_manager
-from app.repo.exceptions import (
-    AlreadyExistsError,
-    CustomForeignKeyViolationError,
-    DatabaseError,
-    NotFoundError,
-)
+from app.adapters.crud import get_db_manager
+from app.domain.exceptions import *
+from core import setup_logging
 
+setup_logging()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    yield
     manager = get_db_manager()
-    manager.close_and_dispose()
+    yield
+    await manager.close_and_dispose()
 
 
 app = FastAPI(lifespan=lifespan)

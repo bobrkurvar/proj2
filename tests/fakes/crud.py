@@ -1,8 +1,8 @@
 import logging
-from copy import deepcopy
-from typing import Any
 
-from app.domain import TaskExecutors
+from app.domain import NotFoundError
+from app.adapters.orm_mapper import DomainToOrmMapper
+
 
 log = logging.getLogger(__name__)
 
@@ -11,173 +11,81 @@ class Table:
 
     def __init__(
         self,
-        name,
         columns: list[str],
         rows: list[dict] | None = None,
-        defaults: dict[str, Any] | None = None,
+        default_num: int = 0
     ):
-        self.name = name
-        self.columns = columns
+        self.default_num = default_num
+        self.columns = set(columns)
         self.rows = rows if rows else []
-        self.defaults = defaults
 
-    def __add__(self, other):
-        # создаём новую таблицу
-        new_table = Table(
-            name=self.name,
-            columns=self.columns.copy(),
-            rows=deepcopy(self.rows),
-            defaults=self.defaults,
+    def add_row(self, **row):
+        for i in self.columns - row.keys():
+            row[i] = self.default_num
+            self.default_num += 1
+        self.rows.append(row)
+        return row
+
+
+class FakeCRUD:
+    def __init__(self):
+        self.tables = {}
+        self._session_factory = None
+
+    def _new_table(self, model):
+        self.tables[model] = Table(DomainToOrmMapper.fields(model))
+
+    def _get_table(self, model):
+        if model not in self.tables:
+            self._new_table(model)
+        return self.tables[model]
+
+    async def create(self, model, seq_data=None, **row):
+        ignored = {"session"}
+        row = {k: v for k, v in row.items() if k not in ignored}
+        table = self._get_table(model)
+        if seq_data:
+            res = []
+            for data in seq_data:
+                res.append(table.add_row(**data))
+        else:
+            res = table.add_row(**row)
+        log.debug("FAKE CREATE MODEL: %s", model)
+        #log.debug("create res: %s", res)
+        return res
+
+    async def read(self, model, **kwargs):
+        ignored = {"limit", "offset", "loaded", "distinct", "session"}
+        table = self._get_table(model)
+        filters = {k: v for k, v in kwargs.items() if k not in ignored}
+        return tuple(
+            r for r in table.rows if all(r.get(k) == v for k, v in filters.items())
         )
 
-        if other.name is TaskExecutors:
-            new_table.columns += ["executors"]
-
-            for i in range(len(new_table.rows)):
-                to_row = {}
-                for row in other.rows or []:
-                    if row["task_id"] == new_table.rows[i]["id"]:
-                        to_row.update(
-                            {"box_area": row["area"], "box_weight": row["weight"]}
-                        )
-                new_table.rows[i].update(to_row)
-        return new_table
-
-
-class FakeCrudError(Exception):
-
-    def __init__(self, err: str):
-        super().__init__()
-        self.err = err
-
-    def __str__(self):
-        return self.err
-
-
-class FakeStorage:
-
-    def __init__(self):
-        self.tables: dict[Any, Table] = {}
-        self.to_join = {
-            "size": TaskExecutors,
-        }
-
-    def register_tables(self, models: list[Table]):
-        for model in models:
-            self.tables[model.name] = model
-
-    def add(self, model, **columns):
-        table = self.tables[model]
-        if table.rows is None:
-            table.rows = []
-        for table_column in table.columns:
-            if table_column not in columns:
-                columns.update(
-                    {
-                        table_column: (
-                            table.defaults[table_column] if table.defaults else None
-                        )
-                    }
-                )
-                if isinstance(table.defaults[table_column], int):
-                    table.defaults[table_column] += 1
-
-        table.rows.append(columns)
-        return columns
-
-    def read(
-        self, model, to_join=None, distinct=None, limit=None, offset=None, **filters
-    ):
-        table = self.tables[model]
-        if not table.rows:
-            return []
-
-        result = []
-        if to_join:
-            for t in to_join:
-                # log.debug("FAKE JOIN %s", t)
-                t = self.to_join.get(t, t)
-                t = self.tables[t]
-                table = table + t
-
-        for row in table.rows:
-            if all(row.get(k) == v for k, v in filters.items()):
-                result.append(row)
-
-        if distinct:
-            if isinstance(distinct, str):
-                distinct = [distinct]
-            seen = set()
-            unique_result = []
-            for row in result:
-                key = tuple(row.get(f) for f in distinct)
-                # log.debug("DISTINCT: %s", key)
-                if key not in seen:
-                    seen.add(key)
-                    unique_result.append(row)
-            result = unique_result
-
-        if offset:
-            result = result[offset:]
-        if limit:
-            result = result[:limit]
-
-        return result
-
-    def update(self, model, filters, **values):
-        table = self.tables[model]
-        # log.debug("UPDATE TABLE %s FILTERS: %s, VALUES: %s", model, filters, values)
+    async def update(self, model, filters, **values):
+        ignored = {"session"}
+        log.debug("UPDATE FILTERS: %s", filters)
+        values = {k: v for k, v in values.items() if k not in ignored}
+        table = self._get_table(model)
         for i in range(len(table.rows)):
             if all(table.rows[i][f] == v for f, v in filters.items()):
                 for k, v in values.items():
+                    log.debug("column %s :: new value %s", k, v)
                     table.rows[i][k] = v
 
-    def delete(self, model, **filters):
-        table = self.tables[model]
+    async def delete(self, model, **filters) -> tuple[dict, ...]:
+        ignored = {"session"}
+        filters = {k: v for k, v in filters.items() if k not in ignored}
+
+        table = self._get_table(model)
         del_res = []
-        # log.debug("DELETE TABLE %s FILTERS: %s", model, filters)
         for i in range(len(table.rows)):
             if all(table.rows[i][f] == v for f, v in filters.items()):
                 del_res.append(table.rows[i])
                 del table.rows[i]
         if not del_res:
-            raise FakeCrudError(f"NOT EXISTS filters: {filters}")
-        return del_res
-
-
-class FakeCRUD:
-    _session_factory = None
-
-    def __init__(self, storage: FakeStorage):
-        self.storage = storage
-
-    async def create(self, model, session=None, **columns):
-        return self.storage.add(model, **columns)
-
-    async def read(
-        self,
-        model,
-        session=None,
-        to_join=None,
-        distinct=None,
-        limit=None,
-        offset=None,
-        **filters,
-    ):
-        return self.storage.read(
-            model,
-            to_join=to_join,
-            distinct=distinct,
-            limit=limit,
-            offset=offset,
-            **filters,
-        )
-
-    async def update(self, model, filters: dict, session=None, **values):
-        return self.storage.update(model, filters, **values)
-
-    async def delete(self, model, session=None, **filters):
-        return self.storage.delete(model, **filters)
+            raise NotFoundError(model, **filters)
+        return tuple(del_res)
 
 
 class FakeUoW:

@@ -1,6 +1,9 @@
 from .UoW import UnitOfWork
 from app.domain import RequestsToExecutor, TaskExecutors, Task, AlreadyExistsError
 from datetime import datetime
+import logging
+
+log = logging.getLogger(__name__)
 
 
 async def make_request(
@@ -47,8 +50,8 @@ async def create_task(
     owner_id: int,
     description: str,
     deadline: datetime,
-    public: bool,
-    executors: list,
+    executors: list = None,
+    public: bool = True,
     uow_class=UnitOfWork,
 ):
     async with uow_class(manager) as uow:
@@ -60,10 +63,12 @@ async def create_task(
             public=public,
             session=uow.session,
         )
-        await manager(TaskExecutors, user_id=owner_id, task_id=task["id"])
-        requests_to_executors = [
-            {"user_id": executor, "task_id": task["id"], "owner_request": True}
-            for executor in executors
-        ]
-        await manager.create(RequestsToExecutor, seq_data=requests_to_executors)
+        await manager.create(TaskExecutors, user_id=owner_id, task_id=task["id"])
+        if executors:
+            requests_to_executors = [
+                {"user_id": executor, "task_id": task["id"], "owner_request": True}
+                for executor in executors
+            ]
+            log.debug("requests: %s", requests_to_executors)
+            await manager.create(RequestsToExecutor, seq_data=requests_to_executors)
         return task
